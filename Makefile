@@ -25,13 +25,15 @@ lua-contrib :
 prepare-sources : prepare-contrib
 	cp src/main/lua/*.lua target/lua/
 prepare-resources : prepare-contrib
-	@if [ "$$(ls -A src/main/resources)" ] ; then cp -R src/main/resources/* target/lua/ ; fi ;
+	echo 'src/main/resources empty'
+	#@if [ "$$(ls -A src/main/resources)" ] ; then cp -R src/main/resources/* target/lua/ ; fi ;
 compile : prepare-sources prepare-resources
 
 prepare-test-sources : prepare-contrib
 	cp src/test/lua/*.lua target/lua/
 prepare-test-resources : prepare-contrib
-	@if [ "$$(ls -A src/test/resources)" ] ; then cp -R src/test/resources/* target/lua/ ; fi ;
+	echo 'src/test/resources empty'
+	#@if [ "$$(ls -A src/test/resources)" ] ; then cp -R src/test/resources/* target/lua/ ; fi ;
 test_files = $(wildcard target/lua/test*.lua)
 .PHONY: $(test_files)
 test: compile prepare-test-resources prepare-test-sources $(test_files)
