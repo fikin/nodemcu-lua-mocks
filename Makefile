@@ -5,7 +5,8 @@ LUA_PATH="target/lua/?.lua"
 .PHONY : all
 all : compile
 
-prepare-contrib : | target/lua target/lua/luaunit.lua lua-contrib #target/lua/mockagne.lua
+prepare-contrib : | target/lua target/lua/luaunit.lua lua-contrib 
+#target/lua/mockagne.lua
 target/lua :
 	mkdir -p target/lua
 target/lua/luaunit.lua : target/git/luaunit.git target/lua
@@ -37,11 +38,10 @@ test: compile prepare-test-resources prepare-test-sources $(test_files)
 $(test_files) :
 	LUA_PATH=$(LUA_PATH) lua $@
 
-dist :
+dist : compile
 	rm -rf target/dist
 	mkdir -p target/dist
-	cp src/main/lua/*.lua target/dist/
-	cp src/main/resources/*.lua target/dist/
+	cp target/lua/* target/dist/
 
 clean :
 	rm -rf target

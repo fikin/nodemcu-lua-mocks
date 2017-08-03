@@ -130,16 +130,12 @@ make clean test dist
 ```
 Dist will place all files to be included in other projects under target/dist folder. Just copy it or include it in LUA_PATH.
 
-To run compile/all target, required is :
+To run compile target, required is :
 * Lua engine in PATH
 * make or if one mimics its commands, only shell
-
-To run tests, required is :
-* all compile/all dependencies
 * git to clone external source code (luaunit). This one can provide manualy too.
 
-To run dist, required is :
-* basically only make or plain shell (to copy files) if mimicks Makefile actions
+Test and dist are dependent on compile.
 
 External library used is [luaunit](https://github.com/bluebird75/luaunit), which is git cloned (https interface) as part of default make target (all, compile). If you're behind proxy, make sure to set http(s)_proxy env vars.
 
