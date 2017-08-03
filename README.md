@@ -122,7 +122,7 @@ This is dummy at the moment and I have zero ideas how to simulate it. But I'd lo
 ### sjson, mdns and rest
 sjson is simulated, I guess ok. Rest is either simulated or plain does nothing.
 
-## Building and deplying
+## Building and deploying
 
 ```shell
 git clone https://github.com/fikin/nodemcu-lua-mocks.git
