@@ -6,21 +6,12 @@ LUA_PATH="target/lua/?.lua"
 all : compile
 
 prepare-contrib : | target/lua target/lua/luaunit.lua lua-contrib 
-#target/lua/mockagne.lua
 target/lua :
 	mkdir -p target/lua
-target/lua/luaunit.lua : target/git/luaunit.git target/lua
-	cp target/git/luaunit.git/luaunit.lua target/lua/luaunit.lua
-target/git/luaunit.git :
-	mkdir -p target/git 
-	git clone https://github.com/bluebird75/luaunit.git target/git/luaunit.git
+target/lua/luaunit.lua : target/lua
+	cp submodules/luaunit/luaunit.lua target/lua/luaunit.lua
 lua-contrib :
 	cp src/contrib/lua/*.lua target/lua/
-#target/lua/mockagne.lua : target/git/mockagne.git target/lua
-#	cp target/git/mockagne.git/mockagne.lua target/lua/mockagne.lua
-#target/git/mockagne.git :
-#	mkdir -p target/git 
-#	git clone https://github.com/vertti/mockagne.git target/git/mockagne.git
 
 prepare-sources : prepare-contrib
 	cp src/main/lua/*.lua target/lua/

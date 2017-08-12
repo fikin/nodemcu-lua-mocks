@@ -1,0 +1,3 @@
+[submodule "submodules/luaunit"]
+	path = submodules/luaunit
+	url = https://github.com/bluebird75/luaunit.git
