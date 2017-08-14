@@ -44,6 +44,9 @@ end
 
 gpio.mode = function(pin,mode, level)
   gpio.TestData.pinStates[pin] = gpio.HIGH
+  if level == gpio.PULLUP then
+    gpio.write(pin,gpio.HIGH)
+  end
 end
 
 gpio.trig = function(pin,what,callback)
