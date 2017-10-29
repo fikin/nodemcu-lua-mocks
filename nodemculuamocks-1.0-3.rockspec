@@ -1,8 +1,8 @@
 package = "NodeMCULuaMocks"
-version = "1.0-2"
+version = "1.0-3"
 source = {
    url = "https://github.com/fikin/nodemcu-lua-mocks",
-   tag = "1.0-2"
+   tag = "1.0-3"
 }
 description = {
    summary = "NodeMCU API mocks",
