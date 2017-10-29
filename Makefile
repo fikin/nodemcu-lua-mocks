@@ -18,7 +18,7 @@ define assert-lualib-exists =
 	fi
 endef
 
-.PHONY: help clean test dist $(LUA_TEST_CASES)
+.PHONY: help clean test dist upload-rock $(LUA_TEST_CASES)
 
 help:
 	@echo type: make clean
@@ -41,3 +41,12 @@ test: $(PRJ_DIR)/target $(LUA_TEST_CASES)
 dist: test
 	mkdir -p $(PRJ_DIR)/target/dist
 	cp $(PRJ_SRC_DIR)/* $(PRJ_CONTRIB_SRC_DIR)/* $(PRJ_DIR)/target/dist/
+
+VER := $(shell grep -E "^version =" nodemculuamocks-tmpl.rockspec | awk '{print $$3}' | sed 's/"//g')
+upload-rock: dist
+	@if [ -z "$(KEY)" ] ; then \
+	    echo "Luarocks api key not defined. Use make KEY=[key] upload-rock to execute." ; \
+	    exit 1 ; \
+    fi
+	cp nodemculuamocks-tmpl.rockspec target/nodemculuamocks-$(VER).rockspec
+	cd target && echo luarocks upload nodemculuamocks-$(VER).rockspec --api-key=$(KEY)

@@ -53,6 +53,14 @@ os.exit( luaunit.LuaUnit.run() )
 
 For complete set of ideas how to unit test with NodeMCU API, check existing tests in src/test/lua. They give fairly good idea what can be done and how.
 
+## Installation
+Most simple way is to use luarocks:
+```shell
+luarocks install nodemculuamocks
+```
+
+All other ways would require repo cloning and playing with your LUA_PATH. See build and deploy desction below for details.
+
 ## Usage
 Any of the NodeMCU modules must be implicitly imported in your unit tests using require('modulename').
 
@@ -124,20 +132,23 @@ sjson is simulated, I guess ok. Rest is either simulated or plain does nothing.
 
 ## Building and deploying
 
+Then clone the repo and build it locally:
 ```shell
 git clone https://github.com/fikin/nodemcu-lua-mocks.git
 make clean test dist
+export LUA_PATH=$(pwd)/target/dist/?.lua
 ```
-Dist will place all files to be included in other projects under target/dist folder. Just copy it or include it in LUA_PATH.
+"dist" target will place all files to be included in other projects under target/dist folder. Just copy it or include it in LUA_PATH.
 
 To run compile target, required is :
 * Lua engine in PATH
 * make or if one mimics its commands, only shell
-* git to clone external source code (luaunit). This one can provide manualy too.
+* luaunit to run tests
 
-Test and dist are dependent on compile.
-
-External library used is [luaunit](https://github.com/bluebird75/luaunit), which is git cloned (https interface) as part of default make target (all, compile). If you're behind proxy, make sure to set http(s)_proxy env vars.
+External build dependency is [luaunit](https://github.com/bluebird75/luaunit).
+```shell
+luarocks install luaunit
+```
 
 Source and build folders structure is modeled after maven principles i.e. target/ contains all working code and src/ contains actual sources.
 
