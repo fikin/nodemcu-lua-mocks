@@ -1,41 +1,43 @@
-SHELL=/bin/bash
+# LICENSE : GPL v3  : see LICENSE file
+# Author: Nikolay Fiykov
 
-LUA_PATH="target/lua/?.lua"
+PRJ_DIR := $(shell pwd)
+PRJ_SRC_DIR := $(PRJ_DIR)/src/main/lua
+PRJ_CONTRIB_SRC_DIR := $(PRJ_DIR)/src/contrib/lua
 
-.PHONY : all
-all : compile
+GIT_ROOT_DIR := $(shell cd $(PRJ_DIR)/../.. && pwd)
 
-prepare-contrib : | target/lua target/lua/luaunit.lua lua-contrib 
-target/lua :
-	mkdir -p target/lua
-target/lua/luaunit.lua : target/lua
-	cp submodules/luaunit/luaunit.lua target/lua/luaunit.lua
-lua-contrib :
-	cp src/contrib/lua/*.lua target/lua/
+LUA_PATH := $(PRJ_SRC_DIR)/?.lua\;$(PRJ_CONTRIB_SRC_DIR)/?.lua
 
-prepare-sources : prepare-contrib
-	cp src/main/lua/*.lua target/lua/
-prepare-resources : prepare-contrib
-	echo 'src/main/resources empty'
-	#@if [ "$$(ls -A src/main/resources)" ] ; then cp -R src/main/resources/* target/lua/ ; fi ;
-compile : prepare-sources prepare-resources
+LUA_TEST_CASES := $(wildcard $(PRJ_DIR)/src/test/lua/*est*.lua)
 
-prepare-test-sources : prepare-contrib
-	cp src/test/lua/*.lua target/lua/
-prepare-test-resources : prepare-contrib
-	echo 'src/test/resources empty'
-	#@if [ "$$(ls -A src/test/resources)" ] ; then cp -R src/test/resources/* target/lua/ ; fi ;
-test_files = $(wildcard target/lua/test*.lua)
-.PHONY: $(test_files)
-test: compile prepare-test-resources prepare-test-sources $(test_files)
-$(test_files) :
-	LUA_PATH=$(LUA_PATH) lua $@
+define assert-lualib-exists =
+	@if [ $$(/usr/bin/luarocks list --porcelain $(1) | wc -l) -eq 0 ] ; then \
+		echo "[ERROR] : $(1) is not installed. type: luarocks install $(1)" ; \
+		return 1 ; \
+	fi
+endef
 
-dist : compile
-	rm -rf target/dist
-	mkdir -p target/dist
-	cp target/lua/* target/dist/
+.PHONY: help clean test dist $(LUA_TEST_CASES)
 
-clean :
-	rm -rf target
+help:
+	@echo type: make clean
+	@echo type: make test
+	@echo type: make dist
 
+clean:
+	rm -rf $(PRJ_DIR)/target
+
+$(LUA_TEST_CASES):
+	@echo [INFO] : Running tests in $@ ...
+	LUA_PATH=$(LUA_PATH) export LUA_PATH && eval $$(luarocks path --append) && env | grep LUA && lua $@
+
+$(PRJ_DIR)/target:
+	mkdir -p $(PRJ_DIR)/target
+	$(call assert-lualib-exists,luaunit)
+
+test: $(PRJ_DIR)/target $(LUA_TEST_CASES)
+
+dist: test
+	mkdir -p $(PRJ_DIR)/target/dist
+	cp $(PRJ_SRC_DIR)/* $(PRJ_CONTRIB_SRC_DIR)/* $(PRJ_DIR)/target/dist/
