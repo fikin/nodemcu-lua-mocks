@@ -49,4 +49,4 @@ upload-rock: dist
 	    exit 1 ; \
     fi
 	cp nodemculuamocks-tmpl.rockspec target/nodemculuamocks-$(VER).rockspec
-	cd target && echo luarocks upload nodemculuamocks-$(VER).rockspec --api-key=$(KEY)
+	cd target && luarocks upload nodemculuamocks-$(VER).rockspec --api-key=$(KEY)
