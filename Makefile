@@ -13,8 +13,8 @@ LUA_TEST_CASES := $(wildcard $(PRJ_DIR)/src/test/lua/*est*.lua)
 
 define assert-lualib-exists =
 	@if [ $$(/usr/bin/luarocks list --porcelain $(1) | wc -l) -eq 0 ] ; then \
-		echo "[ERROR] : $(1) is not installed. type: luarocks install $(1)" ; \
-		return 1 ; \
+		echo "[ERROR] : $(1) is not installed. running: luarocks --local install $(1)" ; \
+		luarocks --local install ${1} ; \
 	fi
 endef
 
@@ -30,7 +30,7 @@ clean:
 
 $(LUA_TEST_CASES):
 	@echo [INFO] : Running tests in $@ ...
-	LUA_PATH=$(LUA_PATH) export LUA_PATH && eval $$(luarocks path --append) && env | grep LUA && lua $@
+	LUA_PATH=$(LUA_PATH) export LUA_PATH && eval $$(luarocks --local path --append) && env | grep LUA && lua $@
 
 $(PRJ_DIR)/target:
 	mkdir -p $(PRJ_DIR)/target
