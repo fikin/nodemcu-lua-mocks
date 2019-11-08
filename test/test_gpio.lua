@@ -10,6 +10,7 @@ local nodemcu = require("nodemcu")
 function testReadWrite()
   nodemcu.reset()
   gpio.mode(1, gpio.INPUT, gpio.PULLUP)
+  lu.assertEquals(nodemcu.gpio_get_mode(1), gpio.INPUT)
   lu.assertEquals(gpio.read(1), gpio.HIGH)
   gpio.write(1, gpio.LOW)
   lu.assertEquals(gpio.read(1), gpio.LOW)
@@ -19,8 +20,10 @@ end
 
 function testTrigger()
   nodemcu.reset()
-  gpio.mode(1, gpio.OUTPUT)
-  gpio.mode(2, gpio.OUTPUT)
+  for i = 1, 5 do
+    gpio.mode(i, gpio.OUTPUT)
+    lu.assertEquals(nodemcu.gpio_get_mode(i), gpio.OUTPUT)
+  end
   local function collectLevelsFor(pin, what)
     local str = ""
     gpio.trig(

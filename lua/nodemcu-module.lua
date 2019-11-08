@@ -102,6 +102,13 @@ NodeMCU.reset()
 -- ######################
 -- ######################
 
+--- NodeMCU.gpio_get_mode returns the mode assigned to the given pin
+-- @param pin
+NodeMCU.gpio_get_mode = function(pin)
+    local p = pinState.assertPinRange(pin, NodeMCU.gpio_pins)
+    return p.mode
+end
+
 --- NodeMCU.gpio_set sets pin to LOW or HIGH or to callback
 -- @param pin
 -- @param val is one of : gpio.HIGH, gpio.LOW, callback function(pin)int or function(int,int)void
