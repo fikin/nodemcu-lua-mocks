@@ -156,7 +156,7 @@ sjson is simulated, I guess ok. Rest is either simulated or plain does nothing.
 
 ```shell
 git clone https://github.com/fikin/nodemcu-lua-mocks.git
-make clean test dist
+make test
 export LUA_PATH=$(pwd)/lua/?.lua
 ```
 
