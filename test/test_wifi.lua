@@ -181,4 +181,41 @@ function testChangeModeFromStaToAp()
   lu.assertTrue(flg.gotDisconnected)
 end
 
+function testStaGetAccessPointsEmpty()
+  nodemcu.reset()
+  wifi.setmode(wifi.STATION)
+  wifi.sta.getap(
+    {},
+    1,
+    function(tbl)
+      lu.assertEquals(tbl, {})
+    end
+  )
+end
+
+function testStaGetAccessPointsAll()
+  nodemcu.reset()
+  nodemcu.wifiSTAsetAP({bssid1 = "ssid1, rssi1, authmode1, channel1", bssid2 = "ssid2, rssi2, authmode2, channel2"})
+  wifi.sta.getap(
+    {},
+    1,
+    function(tbl)
+      lu.assertEquals(tbl, nodemcu.wifiSTA.accessPoints) -- don't mimic this, this field is internal
+    end
+  )
+end
+
+function testStaGetAccessPointsBySSID()
+  nodemcu.reset()
+  wifi.setmode(wifi.STATION)
+  nodemcu.wifiSTAsetAP({bssid1 = "ssid1, rssi1, authmode1, channel1", bssid2 = "ssid2, rssi2, authmode2, channel2"})
+  wifi.sta.getap(
+    {ssid = "ssid2"},
+    1,
+    function(tbl)
+      lu.assertEquals(tbl, {bssid2 = "ssid2, rssi2, authmode2, channel2"})
+    end
+  )
+end
+
 os.exit(lu.run())

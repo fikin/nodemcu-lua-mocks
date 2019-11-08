@@ -102,6 +102,42 @@ Sta.getip = function()
   return nodemcu.wifiSTA.ip, nodemcu.wifiSTA.netmask, nodemcu.wifiSTA.gateway
 end
 
+--- Sta.getap is stock nodemcu API
+Sta.getap = function(cfg, format, cb)
+  if type(cfg) == "function" then
+    cb = cfg
+    cfg = nil
+  end
+  cfg = cfg or {}
+  format = format or 0
+  assert(format == 1, "supported is format=1 only")
+  assert(type(cb) == "function", "cb must be defined")
+  local function filterRes(cfg, tbl)
+    local function filterMatched(cfg, bssid, val)
+      if cfg.bssid and cfg.bssid ~= bssid then
+        return false
+      end
+      local ssid, rssi, authmode, channel = string.match(val, "([^,]+),([^,]+),([^,]+),([^,]*)")
+      print(ssid .. rssi .. authmode .. channel)
+      if cfg.ssid and cfg.ssid ~= ssid then
+        return false
+      end
+      if cfg.channel and cfg.channel ~= channel then
+        return false
+      end
+      return true
+    end
+    local ret = {}
+    for bssid, v in pairs(tbl) do
+      if filterMatched(cfg, bssid, v) then
+        ret[bssid] = v
+      end
+    end
+    return ret
+  end
+  cb(filterRes(cfg, nodemcu.wifiSTA.accessPoints))
+end
+
 local function dispatchDisconnect(currWifiMode, optionalCb)
   assert(
     contains(wifiConstants.stationModeEnum, currWifiMode),

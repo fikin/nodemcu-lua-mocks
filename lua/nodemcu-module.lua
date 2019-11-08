@@ -89,6 +89,7 @@ NodeMCU.reset = function()
         gateway = nil,
         hostname = nil,
         alreadyConnected = false,
+        accessPoints = {},
         configStaFnc = NodeMCU.wifiSTAdefaultNoConfigStaFnc
     }
 
@@ -176,6 +177,12 @@ end
 -- see also defaultConfigStaFnc
 NodeMCU.wifiSTAsetConfigFnc = function(cb)
     NodeMCU.wifiSTA.configStaFnc = cb
+end
+
+--- NodeMCU.wifiSTAsetAP assigns access points list to be returned by Sta.getap()
+-- @param tbl is table in the format of key=bssid and value="ssid, rssi, authmode, channel"
+NodeMCU.wifiSTAsetAP = function(tbl)
+    NodeMCU.wifiSTA.accessPoints = tbl
 end
 
 --- NodeMCU.advanceTime advances the internal NodeMCU time
