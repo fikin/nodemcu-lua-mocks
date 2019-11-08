@@ -68,6 +68,13 @@ tmr.start = function(timerObj)
   return true
 end
 
+--- tmr.stop is stock nodemcu API
+tmr.stop = function(timerObj)
+  timerObj = resolveTimerObj(timerObj)
+  timerObj.timer:stop()
+  return true
+end
+
 --- tmr.alarm is stock nodemcu API
 tmr.alarm = function(timerObj, delay, reoccurType, callback)
   --print('tmr alarm '..tostring(timerObj)..' '..tostring(delay)..' '..tostring(reoccurType)..' '..tostring(callback))

@@ -6,7 +6,7 @@ Authors : Nikolay Fiykov, v1
 local lu = require("luaunit")
 local nodemcu = require("nodemcu")
 
-function testDynamicTimer()
+function testFireOnceTimer()
   nodemcu.reset()
   local fncCalled = 0
   local t = tmr.create()
@@ -23,7 +23,7 @@ function testDynamicTimer()
   lu.assertEquals(fncCalled, 1)
 end
 
-function testStaticTimer()
+function testFileOnceStaticTimer()
   nodemcu.reset()
   local fncCalled = 0
   tmr.register(
@@ -40,7 +40,7 @@ function testStaticTimer()
   lu.assertEquals(fncCalled, 2)
 end
 
-function testDynamicAlarm()
+function testAlarmMethod()
   nodemcu.reset()
   local fncCalled = 0
   lu.assertTrue(
@@ -57,7 +57,7 @@ function testDynamicAlarm()
   lu.assertEquals(fncCalled, 1)
 end
 
-function testStaticAlarm()
+function testAlarmmethofForStatisTimer()
   nodemcu.reset()
   local fncCalled = 0
   lu.assertTrue(
@@ -73,6 +73,26 @@ function testStaticAlarm()
   )
   nodemcu.advanceTime(100)
   lu.assertEquals(fncCalled, 1)
+end
+
+function testReoccurringAlarm()
+  nodemcu.reset()
+  local fncCalled = 0
+  local t = tmr.create()
+  t:register(
+    1,
+    tmr.ALARM_SEMI,
+    function(timerObj)
+      fncCalled = fncCalled + 1
+      timerObj:start()
+    end
+  )
+  nodemcu.advanceTime(5)
+  lu.assertEquals(fncCalled, 0)
+  lu.assertTrue(t:start())
+  nodemcu.advanceTime(5)
+  lu.assertEquals(fncCalled, 5)
+  t:unregister()
 end
 
 os.exit(lu.run())
