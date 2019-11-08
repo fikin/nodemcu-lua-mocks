@@ -1,159 +1,169 @@
 # nodemcu-lua-mocks
+
 A [NodeMCU Lua API](https://nodemcu.readthedocs.io/en/master/en/) mocks used for unit testing.
 
 I use this library to unit test my NodeMCU lua projects.
 
 At beginning I was mockinng method signatures only, just to get a dummy execution pass ok. But now the implementation is sufficient enough to actually simulate NodeMCU functionality. For example tmr is fully emulated, including quirks like tmr.now() 31-bit cycle-over. Wifi is also simulated enough to fake AP connection/disconnection events. And net.TCP server too, including thinks like data chunking for TCP frame sizes.
-I unit test a production ready init.lua as done in my [other project](https://github.com/fikin/humidifier).
+Now I can unit test a production ready init.lua as done in my [other project](https://github.com/fikin/humidifier).
 
 Basically all interfaces are implemented ... Just kidding ... My suggestion is to check the code at src/main/lua for clear view what is working and how. For rest, contributions are much appreciated.
 
 ## Examples
-Use example :
-```lua
-luaunit = require('luaunit')
 
-require('gpio')
+Use example :
+
+```lua
+local lu = require('luaunit')
+local nodemcu = require('nodemcu')
 
 function testTrigger()
-  gpio.TestData.reset()
-  local callCnt = 0
+  nodemcu.reset()
+  local calls = ""
   gpio.trig(1,"both",function(level, time)
-    callCnt = callCnt + 1 
+    calls = calls .. tostring(level)
   end)
-  gpio.TestData.setLow(1)
-  gpio.TestData.setHigh(1)
-  luaunit.assertEquals(callCnt,2)
+  nodemcu.gpio_set(1, gpio.LOW)
+  nodemcu.gpio_set(1, gpio.HIGH)
+  lu.assertEquals(calls, "01")
 end
 
-os.exit( luaunit.LuaUnit.run() )
+os.exit(lu.run())
 ```
 
 Or another example with tmr:
-```lua
-luaunit = require('luaunit')
 
-require('tmr')
+```lua
+local lu = require('luaunit')
+local nodemcu = require('nodemcu')
 
 function testDynamicTimer()
-  tmr.TestData.reset()
+  nodemcu.reset()
   local fncCalled = 0
   local t = tmr.create()
   t:register( 1, tmr.ALARM_SINGLE, function(timerObj)
     fncCalled = 1
     timerObj:unregister()
   end)
-  luaunit.assertTrue( t:start() )
-  Timer.joinAll(100)
-  luaunit.assertEquals(fncCalled,1)
+  lu.assertTrue( t:start() )
+  nodemcu.advanceTime(100)
+  lu.assertEquals(fncCalled,1)
 end
 
-os.exit( luaunit.LuaUnit.run() )
+os.exit(lu.run())
 ```
 
-For complete set of ideas how to unit test with NodeMCU API, check existing tests in src/test/lua. They give fairly good idea what can be done and how.
+For complete set of ideas how to unit test with NodeMCU API, check existing tests in folder tests/. They give fairly good idea what can be done and how.
 
 ## Installation
-Most simple way is to use luarocks:
-```shell
-luarocks install nodemculuamocks
-```
 
-All other ways would require repo cloning and playing with your LUA_PATH. See build and deploy desction below for details.
+Add *lua* directory to your LUA_PATH.
 
 ## Usage
-Any of the NodeMCU modules must be implicitly imported in your unit tests using require('modulename').
 
-If you create multiple tests (functions) inside single lua test file, make sure before each one to call <module>.TestData.reset() to reset its internal state before the test.
-*Note* that dependent modules are not automatically reset i.e. net requires tmr, so in your test you'd have to require both of them and reset them explicitly. Missing require can be easily spotted, unit test execution will complain, but missing TestData.reset() can be devastating and will take a lot of troubleshooting effort on your part.
+Import NodeMCU and make sure before each individual test to reset its state:
 
-Modules which require external input, like net connections and data, gpio and adc read data, typically have convenience methods in module.TestData.xyz which can be used in the unit test. This is the way to provide decisions for wifi, net, gpio, adc, dht modules to name few.
+```lua
+local nodemcu = require("nodemcu")
+...
+nodemcu.reset()
+...
+```
 
-### TestData object
-TestData object is added to all modules to :
-* contain working data from the interfaces, like collect data to inspect later
-* constants which impact internal behavior, like timeout settings and various callbacks
-* a data convenience methods, used to feed data into the module. For example gpio.TestData.setLow(pin) or wifi.TestData.sta.onConfigureCb(cfg). 
-* a "reset()" function, which is rather needed when developing multiple tests in single lua file. For that see below.
+When external input is required, like *wifi*, *net* connections and data, *gpio* and *adc* read data, use *nodemcu* methods to do that. For example:
 
-Basically TestData object is ok to use in unit tests and *never* in your production code. Strive for that pattern.
+```lua
+local nodemcu = require("nodemcu")
+...
+-- assign callback to provide input to adc.read
+nodemcu.adc_read_cb = function() return 55 end
+...
+-- simulate high-signal arrives to pin 1
+gpio.mode(1, gpio.INPUT)
+nodemcu.gpio_set(1,gpio.HIGH)
+-- or use sequence for single values
+nodemcu.gpio_set(1,someSequenceFunc)
+...
+-- capture writes to some gpio pin
+gpio.mode(1, gpio.OUTPUT)
+nodemcu.gpio_capture(1,function(pin,val) assert(pin==1) assert(val==gpio.HIGH) end)
+gpio.write(1, gpio.HIGH)
+...
+```
+
+### Assistance methods
+
+Inspect *nodemcu-module* methods to understand what *nodemcu* supports.
 
 ### tmr, Timer and on timing in general
-Lua doesn't have genuine threading support, I include coroutines here. And present NodeMCU is exclusively designed on asynchronous, event driven mode where all data is done via callbacks. So far NodeNCU is not interrupt driven.
-This posed a particularly difficult challenge how to simulate it, without doing too stupid thinks or deviating too far from what esp SDK is doing.
 
-I've opted to model all timing aspects via Timer object. This is a list of time definitions, with single controll loop to advance the time via Timer.joinAll(joinTimeMs).
-Basic pattern is that once Timer object is created, once started it is added to the list of active definitions and Timer.joinAll() will advance its time.
+NodeMCU API is exclusively designed on asynchronous, event driven processing using callbacks.
+
+This requires some sort of time management, where time before and after an event is properly tracked. And because there is no native thread model in Lua, I've opted of modeling time exclusively. In other words:
+
+* there is an internal Timer object which keeps track of scheduled activities
+* time of this Timer advances manually i.e. one has to call *nodemcu.advanceTime(ms)*
 
 So, basic use pattern is folloqing :
+
 * create timer like tmr.create(2,...):start() which created a timer event after 2ms.
-* call Timer.joinAll(1) and the timer will advance with 1ms i.e. no timer event will be fired yet.
-* call Timer.joinAll(2) and the timer event will be fired.
+* call nodemcu.advanceTime(1) and the timer will advance with 1ms i.e. no timer event will be fired yet.
+* call nodemcu.advanceTime(2) and the timer event will be fired.
 
 tmr module is supported, static and dynamic timers included.
 
 tmr.now() is simluated, including 31-bit rollover.
 
 ### wifi
-Wifi is simulated mostly via callbacks.
 
-Generally config save option is not supported. I suppose I consider it harmfull for the code. For example upon reboot esp wifi will try to reconnect but nodemcu callbacks are gone. And init.lua will be executed anyway. So, lately I've stopped saving it and opted for complete re-initialization logic in init.lua code.
+Wifi is mostly simulated.
+
+One can assign callbacks to act on *sta* and *ap* configure calls using *nodemcu.wifiSTAsetConfigFnc* and *nodemcu.wifiAPsetConfigFnc*. These callbacks decide not only on wifi configure response but also provide with IP and other configuration. See *nodemcu-module* for more details.
 
 wifi.sta.config autoconnect is supported.
 
-Enablin STA and AP happend via providing callbacks returning true for wifi.TestData.sta/ap.onConfigureCb(cfg).
-
-Additionally sta model offers boolean onConnectCb() to simulate wifi connect error aka wrong credentials.
-And onGetIp() to provide with own set of values for ip, netmask and gateway.
-
 ### net
+
 Presently TCP server is implemented. I gather UDP can be done too but I haven't had the need yet.
 
 Faking new connection to some listener happend via TcpListener.TestData.receiveIncomingConnection(...) which expects calbacks called to provide with remote's host sent data and sink callbacks for the data sent back to it.
 For convenience, there are :
+
 * net.TestData.inputArrayFnc(...) used to serve to the connection an array of strings
 * net.TestData.collectDataFnc(...) used to collect all sent data into net.TestData.collected field. These two might have to change in future as they are not multi-connection friendly design.
 
 ### gpio
+
 gpio triggers are supported, or I hope so.
 
-All gpio.write(pin,val) are stored in an array and offered back via gpio.read(pin).
-*Note* that write does not trigger events.
-In order to trigger events, one has to set values via gpio.TestData.setLow/setHigh(pin) methods.
+All *gpio.write(pin,val)* can be captured to user function via *nodemcu.gpio_capture(pin,function(pin,val)void)*.
+
+All external input to pins can be provided via *nodemcu.gpio_set(pin,val)* or *nodemcu.gpio_set(pin,cb)*. This method also triggers gpio pin triggers.
 
 ### adc, dht
+
 Similar to gpio in use pattern.
 
 ### u8g
+
 This is dummy at the moment and I have zero ideas how to simulate it. But I'd love to have someting meaningfull, any suggestion is most welcome.
 
 ### sjson, mdns and rest
+
 sjson is simulated, I guess ok. Rest is either simulated or plain does nothing.
 
 ## Building and deploying
 
-Then clone the repo and build it locally:
 ```shell
 git clone https://github.com/fikin/nodemcu-lua-mocks.git
 make clean test dist
-export LUA_PATH=$(pwd)/target/dist/?.lua
+export LUA_PATH=$(pwd)/lua/?.lua
 ```
-"dist" target will place all files to be included in other projects under target/dist folder. Just copy it or include it in LUA_PATH.
-
-To run compile target, required is :
-* Lua engine in PATH
-* make or if one mimics its commands, only shell
-* luaunit to run tests
-
-External build dependency is [luaunit](https://github.com/bluebird75/luaunit).
-```shell
-luarocks install luaunit
-```
-
-Source and build folders structure is modeled after maven principles i.e. target/ contains all working code and src/ contains actual sources.
 
 ## License
+
 GPLv3, see LICENSE file
 Contributions :
+
 * src/contrib/lua/JSON.lua, see its header.
 * [luaunit](https://github.com/bluebird75/luaunit), see library's own details
