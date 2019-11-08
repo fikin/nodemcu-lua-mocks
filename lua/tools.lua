@@ -41,7 +41,7 @@ tools.collectDataToArray = function()
         data = {}
     }
     o.putCb = function(...)
-        table.insert(o.data, ...)
+        table.insert(o.data, {...})
     end
     o.get = function()
         return o.data

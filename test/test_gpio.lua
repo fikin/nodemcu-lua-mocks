@@ -92,7 +92,7 @@ function testWriteSequence()
   for i = 1, #seq do
     gpio.write(1, seq[i])
   end
-  lu.assertEquals(data.get(), seq)
+  lu.assertEquals(data.get(), {{1, seq[1]}, {1, seq[2]}, {1, seq[3]}, {1, seq[4]}})
 end
 
 os.exit(lu.run())

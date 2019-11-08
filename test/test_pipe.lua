@@ -37,18 +37,17 @@ function testCoroutine()
     coroutine.resume(o.coro)
     coroutine.resume(o.coro)
     coroutine.resume(o.coro)
-    coroutine.resume(o.coro)
 
-    lu.assertEquals(o.consumer.get(), inputData)
+    lu.assertEquals(o.consumer.get(), {{"1"}, {"2"}, {}})
 end
 
 function testTimer()
     local o = before({"123", "456"})
 
     o.tmr:start()
-    nodemcu.advanceTime(13)
+    nodemcu.advanceTime(3)
 
-    lu.assertEquals(o.consumer.get(), {"123", "456"})
+    lu.assertEquals(o.consumer.get(), {{"123"}, {"456"}, {}})
 end
 
 function testStartWithNulThenPickSomeData()
@@ -66,10 +65,10 @@ function testStartWithNulThenPickSomeData()
     )
 
     coroutine.resume(coro)
-    lu.assertEquals(consumeCb.get(), {})
+    lu.assertEquals(consumeCb.get(), {{}})
     value = "A"
     coroutine.resume(coro)
-    lu.assertEquals(consumeCb.get(), {"A"})
+    lu.assertEquals(consumeCb.get(), {{}, {"A"}})
 end
 
 os.exit(lu.run())
