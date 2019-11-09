@@ -44,16 +44,16 @@ Sta.config = function(cfg)
     Eventmon.register(Eventmon.STA_CONNECTED, cfg.connected_cb)
   end
   if type(cfg.disconnected_cb) == "function" then
-    Eventmon.register(Eventmon.STA_DISCONNECTED, cfg.connected_cb)
+    Eventmon.register(Eventmon.STA_DISCONNECTED, cfg.disconnected_cb)
   end
   if type(cfg.authmode_change_cb) == "function" then
-    Eventmon.register(Eventmon.STA_AUTHMODE_CHANGE, cfg.connected_cb)
+    Eventmon.register(Eventmon.STA_AUTHMODE_CHANGE, cfg.authmode_change_cb)
   end
   if type(cfg.got_ip_cb) == "function" then
-    Eventmon.register(Eventmon.STA_GOT_IP, cfg.connected_cb)
+    Eventmon.register(Eventmon.STA_GOT_IP, cfg.got_ip_cb)
   end
   if type(cfg.dhcp_timeout_cb) == "function" then
-    Eventmon.register(Eventmon.STA_DHCP_TIMEOUT, cfg.connected_cb)
+    Eventmon.register(Eventmon.STA_DHCP_TIMEOUT, cfg.dhcp_timeout_cb)
   end
   nodemcu.wifiSTA.ssid = cfg.ssid
   nodemcu.wifiSTA.pwd = cfg.pwd
