@@ -42,7 +42,19 @@ end
 --- TcpServer.listen is stock nodemcu API
 TcpServer.listen = function(self, port, ip, cb)
     assert(self)
+    if type(port) == "function" then
+        cb = port
+        port = nil
+    elseif type(port) == "number" and type(ip) == "function" then
+        cb = ip
+        ip = nil
+    elseif type(port) == "string" and type(ip) == "function" then
+        ip = port
+        cb = ip
+    end
+    port = port or math.random(1000, 50000)
     assert(type(port) == "number", "port must be number")
+    ip = ip or "0.0.0.0"
     assert(type(ip) == "string", "ip must be string")
     assert(type(cb) == "function", "cb must be a function")
     self.TestData.port = port
