@@ -3,6 +3,7 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
+require("bit")
 require("adc")
 require("dht")
 require("i2c")

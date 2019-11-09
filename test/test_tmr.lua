@@ -81,7 +81,7 @@ function testReoccurringAlarm()
   local t = tmr.create()
   t:register(
     1,
-    tmr.ALARM_SEMI,
+    tmr.ALARM_AUTO,
     function(timerObj)
       fncCalled = fncCalled + 1
       timerObj:start()
@@ -93,6 +93,27 @@ function testReoccurringAlarm()
   nodemcu.advanceTime(5)
   lu.assertEquals(fncCalled, 5)
   t:unregister()
+end
+
+function testSemiTimer()
+  nodemcu.reset()
+  local cnt = 0
+  local t = tmr.create()
+  t:register(
+    2,
+    tmr.ALARM_SEMI,
+    function()
+      cnt = cnt + 1
+    end
+  )
+  nodemcu.advanceTime(10)
+  lu.assertEquals(cnt, 0)
+  t:start()
+  nodemcu.advanceTime(10)
+  lu.assertEquals(cnt, 1)
+  t:start()
+  nodemcu.advanceTime(10)
+  lu.assertEquals(cnt, 2)
 end
 
 os.exit(lu.run())

@@ -46,7 +46,7 @@ tmr.register = function(timerObj, delay, reoccurType, callback)
     callback(timerObj)
   end
   timerObj.timer =
-    reoccurType == tmr.ALARM_SINGLE and Timer.createSingle(delay, cbWrapper) or Timer.createReoccuring(delay, cbWrapper)
+    reoccurType == tmr.ALARM_AUTO and Timer.createReoccuring(delay, cbWrapper) or Timer.createSingle(delay, cbWrapper)
 end
 
 --- tmr.unregister is stock nodemcu API

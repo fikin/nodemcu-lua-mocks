@@ -17,7 +17,7 @@ dht.ERROR_TIMEOUT = 3
 -- @return value from cb. If cb is not assigned, returns "dht.OK, 0, 0, 0, 0".
 dht.read = function(pin)
   nodemcu.assertPinRange(pin)
-  return unpack(nodemcu.dht_read_cb(pin))
+  return (unpack or table.unpack)(nodemcu.dht_read_cb(pin))
 end
 
 return dht

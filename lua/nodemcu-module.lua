@@ -159,7 +159,7 @@ end
 -- following values are meaningful if isConfigOk = true
 -- @return isConnectOk boolean indicating that nodemcu can connect to AP (credentials ok)
 -- following values are meaningful if isConnectOk = true
--- @return bssid defaults to "AA:BB:CC:DD:EE:FF"
+-- @return mac defaults to "AA:BB:CC:DD:EE:FF"
 -- @return channel defaults to 11
 -- @return ip defaults to "192.168.255.11"
 -- @return nestmask defaults to "255.255.255.0"

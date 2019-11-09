@@ -34,17 +34,18 @@ TimerObj = {}
 TimerObj.__index = TimerObj
 local createdTimersCnt = 0
 
-TimerObj.create = function(delay, callback, repetitionCnt)
+TimerObj.create = function(delay, callback, repetitionsCnt)
   assert(type(delay) == "number", "delay must be number")
   assert(type(callback) == "function", "callback must be a function")
-  assert(type(repetitionCnt) == "number", "repetitionCnt must be number")
+  assert(type(repetitionsCnt) == "number", "repetitionsCnt must be number")
   local o = {}
   setmetatable(o, TimerObj)
   createdTimersCnt = createdTimersCnt + 1
   o.id = createdTimersCnt
   o.delay = delay
   o.callback = callback
-  o.repetitionCnt = repetitionCnt
+  o.repetitionsCntWhenCreated = repetitionsCnt
+  o.repetitionsCnt = repetitionsCnt
   return o
 end
 
@@ -56,7 +57,7 @@ end
 TimerObj.beforeNextStart = function(self)
   assert(self ~= nil)
   self.startTime = Timer.getCurrentTimeMs()
-  self.repetitionCnt = self.repetitionCnt - 1
+  self.repetitionsCnt = self.repetitionsCnt - 1
 end
 
 TimerObj.start = function(self)
@@ -64,6 +65,7 @@ TimerObj.start = function(self)
   if self:isStarted() then
     return
   end
+  self.repetitionsCnt = self.repetitionsCntWhenCreated
   Timer._timers:append(self)
   self:beforeNextStart()
 end
@@ -72,7 +74,7 @@ TimerObj.stop = function(self)
   assert(self ~= nil)
   if self:isStarted() then
     Timer._timers:remove(self)
-    self.repetitionCnt = 0
+    self.repetitionsCnt = 0
   end
 end
 
@@ -82,7 +84,7 @@ TimerObj.resume = function(self, currTimeStampMs)
   assert(self:isStarted(), "TimerObj : resume() called before start() for timer " .. self.id)
   if Timer.hasDelayElapsedSince(currTimeStampMs, self.startTime, self.delay) then
     self.callback(self)
-    if self.repetitionCnt == 0 then
+    if self.repetitionsCnt == 0 then
       self:stop()
     else
       self:beforeNextStart()

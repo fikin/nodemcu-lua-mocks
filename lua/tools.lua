@@ -6,6 +6,10 @@ Authors : Nikolay Fiykov, v1
 local tools = {}
 tools.__index = tools
 
+local function size(arr)
+    return (table.getn and table.getn(arr)) or #arr
+end
+
 --- tools.cbReturnRingBuf serves array's items in ring-buffer way
 -- @param arr is array of values
 -- @return "function(...) item" which when called repeatedly serves next item from the array.
@@ -13,7 +17,7 @@ tools.cbReturnRingBuf = function(arr)
     assert(arr, "array is nil")
     local i = 0
     return function(...)
-        i = (i < table.getn(arr) and i or 0) + 1
+        i = (i < size(arr) and i or 0) + 1
         return arr[i]
     end
 end
@@ -23,7 +27,7 @@ tools.arrayToFunc = function(arr, recycleArray)
     recycleArray = (recycleArray == nil and true or recycleArray)
     local index = 0
     local function nextPayload(timerObj)
-        if index >= table.getn(arr) then
+        if index >= size(arr) then
             if recycleArray then
                 index = 0
             else
