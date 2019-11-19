@@ -7,6 +7,7 @@ local pinState = require("gpio_pin_state")
 local contains = require("contains")
 local inspect = require("inspect")
 local Timer = require("Timer")
+local wifi = require("wifi-constants")
 
 -- ######################
 -- ######################
@@ -94,7 +95,18 @@ NodeMCU.reset = function()
     }
 
     --- NodeMCU.wifi constains assigned to wifi module data
-    NodeMCU.wifi = {mode = 0}
+    NodeMCU.wifi = {
+        mode = wifi.NULLMODE
+    }
+
+    -- NodeMCU.netTcpRemoteListeners contains all remote listeners defined by test cases
+    NodeMCU.netTcpRemoteListeners = {}
+
+    --- NodeMCU.net_tcp_idleiotimeout is the idle timeout in ms before connection is autoclosed
+    NodeMCU.net_tcp_idleiotimeout = 30000 -- 30sec
+
+    --- NodeMCU.net_tcp_framesize is the TCP stack frame size
+    NodeMCU.net_tcp_framesize = 450
 end
 
 NodeMCU.reset()
@@ -183,6 +195,66 @@ end
 -- @param tbl is table in the format of key=bssid and value="ssid, rssi, authmode, channel"
 NodeMCU.wifiSTAsetAP = function(tbl)
     NodeMCU.wifiSTA.accessPoints = tbl
+end
+
+--- NodeMCU.net_tcp_listener_new creates a new TCP server and registers with global listeners table
+-- This method is convenience on top of net.createServer and NodeMCU.net_tcp_listener_add
+-- @param remotePort to which the listener responds to
+-- @param remoteHost to which the listener responds to
+-- @param listenerCb is stock NodeMCU net.server.listen function(net.socket)(void) listener callback
+-- @param timeoutSec is idle io timeout
+NodeMCU.net_tcp_listener_new = function(remotePort, remoteHost, listenerCb, timeoutSec)
+    assert(type(remotePort) == "number", "remotePort must be number")
+    assert(type(remoteHost) == "string", "remoteHost must be string")
+    assert(type(listenerCb) == "function")
+    timeoutSec = timeoutSec or 30
+    local srv = net.createServer(net.TCP, timeoutSec)
+    srv:listen(remotePort, remoteHost, listenerCb)
+    NodeMCU.net_tcp_listener_add(srv)
+end
+
+--- NodeMCU.net_tcp_listener_add registes a net.tcp server responding to given port and host in global table of listeners
+-- @param tcpServer is NetTCPServer
+NodeMCU.net_tcp_listener_add = function(tcpServer)
+    assert(tcpServer)
+    assert(type(tcpServer._port) == "number")
+    assert(type(tcpServer._ip) == "string")
+    assert(type(tcpServer._cb) == "function")
+    local key = tostring(tcpServer._port) .. "-" .. tcpServer._ip
+    NodeMCU.netTcpRemoteListeners[key] = tcpServer
+end
+
+--- NodeMCU.net_tcp_listener_remove removes a net.tcp server from global table of listeners
+-- @param tcpServer is listening to
+NodeMCU.net_tcp_listener_remove = function(tcpServer)
+    assert(tcpServer)
+    assert(type(tcpServer._port) == "number")
+    assert(type(tcpServer._ip) == "string")
+    local key = tostring(tcpServer._port) .. "-" .. tcpServer._ip
+    NodeMCU.netTcpRemoteListeners[key] = nil
+end
+
+--- NodeMCU.net_tcp_listener_get returns a net.tcp server from global table of listeners if defined.
+-- @param remotePort to which the listener responds to
+-- @param remoteHost to which the listener responds to
+-- @return NetTCPServer object or nil if no such bound to given port and host
+NodeMCU.net_tcp_listener_get = function(remotePort, remoteHost)
+    assert(type(remotePort) == "number", "remotePort must be number")
+    assert(type(remoteHost) == "string", "remoteHost must be string")
+    local key = tostring(remotePort) .. "-" .. remoteHost
+    return NodeMCU.netTcpRemoteListeners[key]
+end
+
+--- NodeMCU.net_ip_get returns IP address assigned to nodemcu
+-- @return sta.ip or ap.ip or nil if not connected
+NodeMCU.net_ip_get = function()
+    if NodeMCU.wifi.mode == wifi.NULLMODE then
+        return nil
+    elseif NodeMCU.wifi.mode == wifi.STATION or NodeMCU.wifi.mode == wifi.STATIONAP then
+        return NodeMCU.wifiSTA.ip
+    else
+        return NodeMCU.wifiAP.ip
+    end
 end
 
 --- NodeMCU.advanceTime advances the internal NodeMCU time

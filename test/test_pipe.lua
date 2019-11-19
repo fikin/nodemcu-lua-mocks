@@ -7,7 +7,7 @@ Authors : Nikolay Fiykov, v1
 -- ==========================
 -- ==========================
 local lu = require("luaunit")
-local pipeFactory = require("pipe")
+local pipe = require("pipe")
 local nodemcu = require("nodemcu")
 local tools = require("tools")
 
@@ -19,8 +19,8 @@ local function before(inData)
         dataCb = tools.arrayToFunc(inData, false),
         consumer = tools.collectDataToArray()
     }
-    o.coro, o.tmr =
-        pipeFactory.createTimerPipeline(
+    o.pipe =
+        pipe.newPipe(
         function()
             return o.isEOF, o.dataCb()
         end,
@@ -34,9 +34,9 @@ function testCoroutine()
     local inputData = {"1", "2"}
     local o = before(inputData)
 
-    coroutine.resume(o.coro)
-    coroutine.resume(o.coro)
-    coroutine.resume(o.coro)
+    coroutine.resume(o.pipe.coro)
+    coroutine.resume(o.pipe.coro)
+    coroutine.resume(o.pipe.coro)
 
     lu.assertEquals(o.consumer.get(), {{"1"}, {"2"}, {}})
 end
@@ -44,7 +44,7 @@ end
 function testTimer()
     local o = before({"123", "456"})
 
-    o.tmr:start()
+    o.pipe.tmr:start()
     nodemcu.advanceTime(3)
 
     lu.assertEquals(o.consumer.get(), {{"123"}, {"456"}, {}})
@@ -56,18 +56,19 @@ function testStartWithNulThenPickSomeData()
     local isEOF = false
     local value = nil
     local consumeCb = tools.collectDataToArray()
-    local coro =
-        pipeFactory.createCoroutinePipeline(
+    local p =
+        pipe.newPipe(
         function()
             return isEOF, value
         end,
-        consumeCb.putCb
+        consumeCb.putCb,
+        false
     )
 
-    coroutine.resume(coro)
+    coroutine.resume(p.coro)
     lu.assertEquals(consumeCb.get(), {{}})
     value = "A"
-    coroutine.resume(coro)
+    coroutine.resume(p.coro)
     lu.assertEquals(consumeCb.get(), {{}, {"A"}})
 end
 

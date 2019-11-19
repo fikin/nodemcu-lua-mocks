@@ -3,10 +3,13 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
--- ==========================
--- ==========================
--- ==========================
 local Timer = require("Timer")
+
+local Pipe = {
+    coro = nil,
+    tmr = nil
+}
+Pipe.__index = Pipe
 
 --- createCoroutinePipeline creates a pipe (implemented as coroutine) and timer
 -- Piping coroutine is reading from inputCb and putting it to outputCb.
@@ -61,21 +64,20 @@ local function wrapInTimerLoop(coro, autoStart, timerDelayMs)
     return tmr
 end
 
---- createTimerPipeline is creating a pipeline coroutine and timer associated with it
+--- Pipe.newPipe is creating a pipeline coroutine and timer associated with it
 -- see createCoroutinePipeline and wrapInTimerLoop for more details
 -- @param inputCb is "function()(isEOF,data)" where data is next patch of information and isEOF indicates end of data
 -- @param outputCb is "function(data)void" where data is next patch of information, not bigger than chunkSize
 -- @param autoStart if true it starts the timer, by defualt true
--- @param timerDelayMs is timer loop delay in ms. by default 1
--- @return two arguments : coro, tmr
-local function createTimerPipeline(inputCb, outputCb, autoStart, timerDelayMs)
-    local coro = createCoroutinePipeline(inputCb, outputCb)
-    local tmr = wrapInTimerLoop(coro, autoStart, timerDelayMs)
-    return coro, tmr
+Pipe.newPipe = function(inputCb, outputCb, autoStart)
+    assert(type(inputCb) == "function", "inputCb must be a function")
+    assert(type(outputCb) == "function", "inputCb must be a function")
+    assert(type(autoStart) == "boolean", "autoStart must be boolean")
+    local o = {}
+    setmetatable(o, Pipe)
+    o.coro = createCoroutinePipeline(inputCb, outputCb)
+    o.tmr = wrapInTimerLoop(o.coro, autoStart, 1)
+    return o
 end
 
-return {
-    createCoroutinePipeline = createCoroutinePipeline,
-    wrapInTimerLoop = wrapInTimerLoop,
-    createTimerPipeline = createTimerPipeline
-}
+return Pipe

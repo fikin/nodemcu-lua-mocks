@@ -3,77 +3,184 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
+-- ==========================
+-- ==========================
+-- ==========================
 local lu = require("luaunit")
 local nodemcu = require("nodemcu")
-local inspect = require("inspect")
 
-function testTcpListener()
-  nodemcu.reset()
-
-  local listener = net.createServer(net.TCP, 1000)
-
-  local connectionReceived = false
-  local onIncomingConnection = function(con)
-    lu.assertNotIsNil(con)
-    connectionReceived = true
-  end
-
-  listener:listen(11, "192.168.255.2", onIncomingConnection)
-
-  local p, i = listener:getaddr()
-  lu.assertEquals(i, "192.168.255.2")
-  lu.assertEquals(p, 11)
-
-  local con = listener:TD_ConnectFrom(44, "33.33.33.33")
-  lu.assertTrue(connectionReceived)
+local uniformCallbacks = function(cb)
+    local function emptyFnc()
+    end
+    cb = cb or {}
+    cb.sent = cb.sent or emptyFnc
+    cb.receive = cb.receive or emptyFnc
+    cb.disconnection = cb.disconnection or emptyFnc
+    cb.connection = cb.connection or emptyFnc
+    cb.reconnection = cb.reconnection or emptyFnc
+    return cb
 end
 
-function testTcpServer()
-  nodemcu.reset()
-
-  local closed = false
-  local onIncomingConnection = function(con)
-    lu.assertNotNil(con)
-    local ready = false
+local function wrapCon(con, cb)
+    cb = uniformCallbacks(cb)
+    local w = {
+        sent = 0,
+        received = {},
+        connection = 0,
+        disconnection = 0,
+        reconnection = 0
+    }
     con:on(
-      "receive",
-      function(sck, data)
-        lu.assertNotNil(sck)
-        lu.assertNotNil(data)
-        sck:send("1-" .. data)
-        ready = data == "34"
-      end
-    )
-    con:on(
-      "sent",
-      function(sck)
-        lu.assertNotNil(sck)
-        if ready then
-          sck:close()
+        "sent",
+        function(con2)
+            w.sent = w.sent + 1
+            cb.sent(con2)
         end
-      end
     )
     con:on(
-      "disconnection",
-      function(sck)
-        closed = true
-      end
+        "receive",
+        function(con2, data)
+            table.insert(w.received, data)
+            cb.receive(con2, data)
+        end
     )
-  end
+    con:on(
+        "disconnection",
+        function(con2)
+            w.disconnection = w.disconnection + 1
+            cb.disconnection(con2, data)
+        end
+    )
+    con:on(
+        "connection",
+        function(con2)
+            w.connection = w.connection + 1
+            cb.connection(con2, data)
+        end
+    )
+    con:on(
+        "reconnection",
+        function(con2)
+            w.reconnection = w.reconnection + 1
+            cb.reconnection(con2, data)
+        end
+    )
+    return w
+end
 
-  local srv = net.createServer(net.TCP, 1)
+function testConnectTo()
+    nodemcu.reset()
 
-  srv:listen(22, "192.168.255.2", onIncomingConnection)
+    local con = net.createConnection(net.TCP, false)
+    local w = wrapCon(con)
 
-  local conn = srv:TD_ConnectFrom(44, "33.33.33.33")
-  nodemcu.advanceTime(10)
-  conn:TD_Send("12")
-  nodemcu.advanceTime(10)
-  conn:TD_Send("34")
-  nodemcu.advanceTime(10)
+    local s2, w2
+    nodemcu.net_tcp_listener_new(
+        1111,
+        "22.22.22.22",
+        function(con2)
+            assert(con2)
+            s2 = con2
+            w2 =
+                wrapCon(
+                s2,
+                {
+                    receive = function(con3, data)
+                        con3:send(data .. "1")
+                    end
+                }
+            )
+            return s2
+        end
+    )
 
-  lu.assertTrue(closed)
-  lu.assertEquals(conn:TD_PopSentData(), {"1-12", "1-34"})
+    con:connect(1111, "22.22.22.22")
+
+    nodemcu.advanceTime(5)
+    lu.assertEquals(table.pack(con:getaddr()), table.pack(s2:getpeer()))
+    lu.assertEquals(table.pack(con:getpeer()), table.pack(s2:getaddr()))
+
+    nodemcu.advanceTime(5)
+    con:send("1")
+    nodemcu.advanceTime(5)
+    con:send("2")
+    nodemcu.advanceTime(5)
+    con:close()
+    nodemcu.advanceTime(5)
+
+    lu.assertEquals(w.sent, 2)
+    lu.assertEquals(w.received, {"11", "21"})
+    lu.assertEquals(w.connection, 1)
+    lu.assertEquals(w.disconnection, 1)
+    lu.assertEquals(w.reconnection, 0)
+
+    lu.assertEquals(w2.sent, 2)
+    lu.assertEquals(w2.received, {"1", "2"})
+    lu.assertEquals(w2.connection, 1)
+    lu.assertEquals(w2.disconnection, 1)
+    lu.assertEquals(w2.reconnection, 0)
+end
+
+function testTCPNetFrameSize()
+    nodemcu.reset()
+    nodemcu.net_tcp_framesize = 1
+
+    local con = net.createConnection(net.TCP, false)
+
+    local s2, w2
+    nodemcu.net_tcp_listener_new(
+        1111,
+        "22.22.22.22",
+        function(con2)
+            s2 = con2
+            w2 = wrapCon(s2)
+            return s2
+        end
+    )
+
+    con:connect(1111, "22.22.22.22")
+    nodemcu.advanceTime(5)
+    con:send("123")
+    nodemcu.advanceTime(5)
+    con:close()
+    nodemcu.advanceTime(5)
+
+    lu.assertEquals(w2.received, {"1", "2", "3"})
+end
+
+function testConnectionTimeout()
+    nodemcu.reset()
+
+    nodemcu.net_tcp_idleiotimeout = 1
+
+    local con = net.createConnection(net.TCP, false)
+    local w = wrapCon(con)
+
+    local s2, w2
+    nodemcu.net_tcp_listener_new(
+        1111,
+        "22.22.22.22",
+        function(con2)
+            s2 = con2
+            w2 = wrapCon(s2)
+            return s2
+        end
+    )
+
+    con:connect(1111, "22.22.22.22")
+    nodemcu.advanceTime(5)
+
+    lu.assertEquals(w.sent, 0)
+    lu.assertEquals(w.received, {})
+    lu.assertEquals(w.connection, 1)
+    lu.assertEquals(w.disconnection, 1)
+    lu.assertEquals(w.reconnection, 0)
+
+    lu.assertEquals(w2.sent, 0)
+    lu.assertEquals(w2.received, {})
+    lu.assertEquals(w2.connection, 1)
+    lu.assertEquals(w2.disconnection, 1)
+    lu.assertEquals(w2.reconnection, 0)
 end
 
 os.exit(lu.run())
