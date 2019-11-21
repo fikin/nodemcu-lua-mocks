@@ -50,18 +50,18 @@ TimerObj.create = function(delay, callback, repetitionsCnt)
 end
 
 TimerObj.isStarted = function(self)
-  assert(self ~= nil)
+  assert(type(self) == "table")
   return Timer._timers:contains(self)
 end
 
 TimerObj.beforeNextStart = function(self)
-  assert(self ~= nil)
+  assert(type(self) == "table")
   self.startTime = Timer.getCurrentTimeMs()
   self.repetitionsCnt = self.repetitionsCnt - 1
 end
 
 TimerObj.start = function(self)
-  assert(self ~= nil)
+  assert(type(self) == "table")
   if self:isStarted() then
     return
   end
@@ -71,7 +71,7 @@ TimerObj.start = function(self)
 end
 
 TimerObj.stop = function(self)
-  assert(self ~= nil)
+  assert(type(self) == "table")
   if self:isStarted() then
     Timer._timers:remove(self)
     self.repetitionsCnt = 0
@@ -79,7 +79,7 @@ TimerObj.stop = function(self)
 end
 
 TimerObj.resume = function(self, currTimeStampMs)
-  assert(self ~= nil)
+  assert(type(self) == "table")
   assert(type(currTimeStampMs) == "number", "currTimeStampMs must be a number")
   assert(self:isStarted(), "TimerObj : resume() called before start() for timer " .. self.id)
   if Timer.hasDelayElapsedSince(currTimeStampMs, self.startTime, self.delay) then

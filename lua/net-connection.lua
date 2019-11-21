@@ -8,7 +8,6 @@ Authors : Nikolay Fiykov, v1
 -- ==========================
 local contains = require("contains")
 local inspect = require("inspect")
-local pipe = require("pipe")
 local Timer = require("Timer")
 local nodemcu = require("nodemcu-module")
 
@@ -55,7 +54,7 @@ local function newInactivityWatchdog(timeout, socket)
         _lastActivityTs = 0,
         _tmr = nil,
         _onTimer = function(self)
-            assert(self)
+            assert(type(self) == "table")
             assert(not self._wasClosed, "someone did not close the io-inact watchdog when socket was closed")
             if Timer.hasDelayElapsedSince(Timer.getCurrentTimeMs(), self._lastActivityTs, self._idleTimeout) then
                 print("[WARN] : socket io inactivity timeout detected, closing the socket")
@@ -63,7 +62,7 @@ local function newInactivityWatchdog(timeout, socket)
             end
         end,
         _assertTmr = function(self)
-            assert(self)
+            assert(type(self) == "table")
             if not self._tmr then
                 self._tmr =
                     Timer.createReoccuring(
@@ -75,17 +74,17 @@ local function newInactivityWatchdog(timeout, socket)
             end
         end,
         reset = function(self)
-            assert(self)
+            assert(type(self) == "table")
             self._lastActivityTs = Timer.getCurrentTimeMs()
         end,
         start = function(self)
-            assert(self)
+            assert(type(self) == "table")
             self:_assertTmr()
             self:reset()
             self._tmr:start()
         end,
         stop = function(self)
-            assert(self)
+            assert(type(self) == "table")
             assert(self._tmr)
             self._tmr:stop()
         end
@@ -96,19 +95,19 @@ local function newFifoArray()
     return {
         _arr = {},
         add = function(self, value)
-            assert(self)
+            assert(type(self) == "table")
             assert(type(value) == "function")
             assert(self._arr)
             table.insert(self._arr, value)
         end,
         remove = function(self)
-            assert(self)
+            assert(type(self) == "table")
             assert(self._arr)
             assert(#self._arr > 0)
             return table.remove(self._arr, 1)
         end,
         hasData = function(self)
-            assert(self)
+            assert(type(self) == "table")
             assert(self._arr)
             return #self._arr > 0
         end
@@ -119,21 +118,21 @@ local function newIoPipe(consumerCb)
     local o = {
         _queue = newFifoArray(),
         _onTimer = function(self)
-            assert(self)
+            assert(type(self) == "table")
             if self._queue:hasData() then
                 consumerCb(self._queue:remove()())
             end
         end,
         send = function(self, v)
-            assert(self)
+            assert(type(self) == "table")
             self._queue:add(v)
         end,
         start = function(self)
-            assert(self)
+            assert(type(self) == "table")
             self._tmr:start()
         end,
         stop = function(self)
-            assert(self)
+            assert(type(self) == "table")
             self._tmr:stop()
         end
     }
@@ -152,7 +151,7 @@ end
 Socket.new = function(idleIoTimeoutMs)
     assert(idleIoTimeoutMs)
     local function doNothingSelfFnc(self)
-        assert(self)
+        assert(type(self) == "table")
     end
     local o = {
         _addr = {
@@ -183,14 +182,14 @@ end
 
 --- Socket.getaddr is stock nodemcu API
 Socket.getaddr = function(self)
-    assert(self)
+    assert(type(self) == "table")
     assert(self._addr)
     return self._addr.port, self._addr.host
 end
 
 --- Socket.getpeer is stock nodemcu API
 Socket.getpeer = function(self)
-    assert(self)
+    assert(type(self) == "table")
     assert(self._peer)
     assert(self._peer._addr)
     return self._peer._addr.port, self._peer._addr.host
@@ -198,7 +197,7 @@ end
 
 --- Socket.on is stock nodemcu API
 Socket.on = function(self, event, cb)
-    assert(self)
+    assert(type(self) == "table")
     assert(type(event) == "string")
     assert(contains(eventEnum, event), "expected event one of " .. inspect(eventEnum) .. " but found " .. event)
     cb = cb or function()
@@ -209,7 +208,7 @@ end
 
 --- Socket.send is stock nodemcu API
 Socket.send = function(self, data, callback)
-    assert(self)
+    assert(type(self) == "table")
     assert(type(data) == "string")
     for _, token in ipairs(tokenize(nodemcu.net_tcp_framesize, data)) do
         self:_doSend(token, callback)
@@ -221,7 +220,7 @@ end
 --   - collect all data from Socket.send() method to given at construction time sentDataCollectorCb
 --   - read and distpatch to callbacks any data provided to Socket.TestDataReceive() method
 Socket.connect = function(self, remotePort, remoteIp)
-    assert(self)
+    assert(type(self) == "table")
     assert(not self._wasClosed)
     assert(not self._wasOpened)
     local function newRemoteSocket(remoteSrv)
@@ -250,7 +249,7 @@ end
 
 --- Socket.close is stock nodemcu API
 Socket.close = function(self)
-    assert(self)
+    assert(type(self) == "table")
     spawn(
         function()
             self._peer:_onRemoteClose()
@@ -260,7 +259,7 @@ Socket.close = function(self)
 end
 
 Socket._doSend = function(self, data, callback)
-    assert(self)
+    assert(type(self) == "table")
     assert(type(data) == "string")
     callback = callback or self._events["sent"]
     assert(type(callback) == "function")
@@ -280,12 +279,12 @@ Socket._doSend = function(self, data, callback)
 end
 
 Socket._onRemoteClose = function(self)
-    assert(self)
+    assert(type(self) == "table")
     self:_doClose()
 end
 
 Socket._doClose = function(self)
-    assert(self)
+    assert(type(self) == "table")
     assert(self._wasConnected)
     assert(not self._wasClosed)
     spawn(
@@ -299,7 +298,7 @@ Socket._doClose = function(self)
 end
 
 Socket._receiveDataCb = function(self)
-    assert(self)
+    assert(type(self) == "table")
     return function(data)
         if data then
             self._timeoutTimer:reset()
@@ -309,13 +308,13 @@ Socket._receiveDataCb = function(self)
 end
 
 Socket._onRemoteConnect = function(self, peer)
-    assert(self)
+    assert(type(self) == "table")
     assert(peer)
     self:_doConnect(peer)
 end
 
 Socket._doConnect = function(self, peer)
-    assert(self)
+    assert(type(self) == "table")
     assert(peer)
     assert(not self._wasConnected)
     assert(not self._wasClosed)

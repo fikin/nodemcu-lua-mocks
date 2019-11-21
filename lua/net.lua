@@ -21,13 +21,13 @@ NetTCPServer.__index = NetTCPServer
 
 --- NetTCPServer.getaddr is stock nodemcu API
 NetTCPServer.getaddr = function(self)
-  assert(self)
+  assert(type(self) == "table")
   return self._port, self._ip
 end
 
 --- NetTCPServer.close is stock nodemcu API
 NetTCPServer.close = function(self)
-  assert(self)
+  assert(type(self) == "table")
   assert(not self._isClosed, "listener already closed")
   self._isClosed = true
   nodemcu.net_tcp_listener_remove(self)
@@ -35,7 +35,7 @@ end
 
 --- NetTCPServer.listen is stock nodemcu API
 NetTCPServer.listen = function(self, port, ip, cb)
-  assert(self)
+  assert(type(self) == "table")
   if type(port) == "function" then
     cb = port
     port = nil

@@ -57,29 +57,3 @@ end
 
 return PinState
 
--- --- gpio.TestData.togglePin toggles the pin value
--- gpio.TestData.togglePin = function(pin)
---   local p = assertPinRange(pin)
---   local function toggleValue()
---     if p.cbGetValue() == gpio.HIGH then
---       return gpio.LOW
---     else
---       return gpio.HIGH
---     end
---   end
---   changePinValue(p, toggleValue(pin))
--- end
-
--- --- gpio.TestData.togglePinTimer starts timer to toggle pin values each interrupt
--- gpio.TestData.togglePinTimer = function(pin, interval, howManyTimes)
---   local t =
---     Timer.createReoccuring(
---     interval,
---     function(timerObj)
---       pio.TestData.togglePin(pin)
---     end,
---     howManyTimes
---   )
---   t:start()
---   return t
--- end
