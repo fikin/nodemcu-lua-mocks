@@ -53,4 +53,63 @@ tools.collectDataToArray = function()
     return o
 end
 
+tools.wrapConnection = function(con, cb)
+    local uniformCallbacks = function(cb)
+        local function emptyFnc()
+        end
+        cb = cb or {}
+        cb.sent = cb.sent or emptyFnc
+        cb.receive = cb.receive or emptyFnc
+        cb.disconnection = cb.disconnection or emptyFnc
+        cb.connection = cb.connection or emptyFnc
+        cb.reconnection = cb.reconnection or emptyFnc
+        return cb
+    end
+
+    cb = uniformCallbacks(cb)
+    local w = {
+        sent = 0,
+        received = {},
+        connection = 0,
+        disconnection = 0,
+        reconnection = 0
+    }
+    con:on(
+        "sent",
+        function(con2)
+            w.sent = w.sent + 1
+            cb.sent(con2)
+        end
+    )
+    con:on(
+        "receive",
+        function(con2, data)
+            table.insert(w.received, data)
+            cb.receive(con2, data)
+        end
+    )
+    con:on(
+        "disconnection",
+        function(con2)
+            w.disconnection = w.disconnection + 1
+            cb.disconnection(con2, data)
+        end
+    )
+    con:on(
+        "connection",
+        function(con2)
+            w.connection = w.connection + 1
+            cb.connection(con2, data)
+        end
+    )
+    con:on(
+        "reconnection",
+        function(con2)
+            w.reconnection = w.reconnection + 1
+            cb.reconnection(con2, data)
+        end
+    )
+    return w
+end
+
 return tools
