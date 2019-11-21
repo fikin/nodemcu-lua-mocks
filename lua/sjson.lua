@@ -52,6 +52,7 @@ end
 --- JsonEncoder.read implements stock nodemcu sjson.encoder API
 JsonEncoder.read = function(self, size)
   assert(type(self) == "table")
+  size = size or 1024
   assert(type(size) == "number")
   if self._readStartIndex <= self._len then
     local endIndex = self._readStartIndex + size
