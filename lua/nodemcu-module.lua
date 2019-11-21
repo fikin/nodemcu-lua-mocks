@@ -246,10 +246,10 @@ NodeMCU.net_tcp_listener_get = function(remotePort, remoteHost)
 end
 
 --- NodeMCU.net_ip_get returns IP address assigned to nodemcu
--- @return sta.ip or ap.ip or nil if not connected
+-- @return sta.ip or ap.ip or "0.0.0.0" if not connected
 NodeMCU.net_ip_get = function()
     if NodeMCU.wifi.mode == wifi.NULLMODE then
-        return nil
+        return "0.0.0.0"
     elseif NodeMCU.wifi.mode == wifi.STATION or NodeMCU.wifi.mode == wifi.STATIONAP then
         return NodeMCU.wifiSTA.ip
     else

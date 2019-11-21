@@ -44,11 +44,12 @@ NetTCPServer.listen = function(self, port, ip, cb)
     ip = nil
   elseif type(port) == "string" and type(ip) == "function" then
     ip = port
+    port = nil
     cb = ip
   end
   port = port or math.random(1000, 50000)
   assert(type(port) == "number", "port must be number")
-  ip = ip or "0.0.0.0"
+  ip = ip or nodemcu.net_ip_get()
   assert(type(ip) == "string", "ip must be string")
   assert(type(cb) == "function", "cb must be a function(net.socket)")
   self._port = port

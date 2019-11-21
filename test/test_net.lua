@@ -125,4 +125,57 @@ function testConnectionTimeout()
     lu.assertEquals(w2.reconnection, 0)
 end
 
+function testTCPListener()
+    nodemcu.reset()
+
+    local srv = net.createServer(net.TCP, 30)
+    assert(srv)
+    local s2, w2
+    srv:listen(
+        8080,
+        function(con)
+            assert(not s2)
+            s2 = con
+            w2 =
+                tools.wrapConnection(
+                con,
+                {
+                    receive = function(con3, data)
+                        con3:send(data .. "1")
+                    end
+                }
+            )
+        end
+    )
+
+    local con = net.createConnection(net.TCP, false)
+    local w = tools.wrapConnection(con)
+
+    con:connect(8080, nodemcu.net_ip_get())
+
+    nodemcu.advanceTime(5)
+    lu.assertEquals(table.pack(con:getaddr()), table.pack(s2:getpeer()))
+    lu.assertEquals(table.pack(con:getpeer()), table.pack(s2:getaddr()))
+
+    nodemcu.advanceTime(5)
+    con:send("1")
+    nodemcu.advanceTime(5)
+    con:send("2")
+    nodemcu.advanceTime(5)
+    con:close()
+    nodemcu.advanceTime(5)
+
+    lu.assertEquals(w.sent, 2)
+    lu.assertEquals(w.received, {"11", "21"})
+    lu.assertEquals(w.connection, 1)
+    lu.assertEquals(w.disconnection, 1)
+    lu.assertEquals(w.reconnection, 0)
+
+    lu.assertEquals(w2.sent, 2)
+    lu.assertEquals(w2.received, {"1", "2"})
+    lu.assertEquals(w2.connection, 1)
+    lu.assertEquals(w2.disconnection, 1)
+    lu.assertEquals(w2.reconnection, 0)
+end
+
 os.exit(lu.run())
