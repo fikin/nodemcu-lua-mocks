@@ -107,6 +107,9 @@ NodeMCU.reset = function()
 
     --- NodeMCU.net_tcp_framesize is the TCP stack frame size
     NodeMCU.net_tcp_framesize = 450
+
+    --- NodeMCU.pwm contains pwm-module data
+    NodeMCU.pwm = {history = {}, duties = {}, clock = nil}
 end
 
 NodeMCU.reset()
@@ -255,6 +258,14 @@ NodeMCU.net_ip_get = function()
     else
         return NodeMCU.wifiAP.ip
     end
+end
+
+--- NodeMCU.pwm_get_history is returning pwm-module generated events since last time this method was called
+-- @return list of gathered pwm events since last call to that method
+NodeMCU.pwm_get_history = function()
+    local ret = NodeMCU.pwm.history
+    NodeMCU.pwm.history = {}
+    return ret
 end
 
 --- NodeMCU.advanceTime advances the internal NodeMCU time
