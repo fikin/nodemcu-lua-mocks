@@ -48,7 +48,9 @@ tools.collectDataToArray = function()
         table.insert(o.data, {...})
     end
     o.get = function()
-        return o.data
+        local ret = o.data
+        o.data = {}
+        return ret
     end
     return o
 end

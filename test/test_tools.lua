@@ -34,6 +34,8 @@ function testCollectDataFnc()
   o.putCb("1")
   o.putCb("2")
   lu.assertEquals(o.get(), {{"1"}, {"2"}})
+  o.putCb("3")
+  lu.assertEquals(o.get(), {{"3"}})
 end
 
 os.exit(lu.run())
