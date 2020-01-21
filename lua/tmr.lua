@@ -87,4 +87,11 @@ tmr.now = function()
   return (Timer.getCurrentTimeMs() % require("duration").TMR_SWAP_TIME) * 1000 -- return microsec, mimic 31 bit cycle over
 end
 
+--- tmr.delay is stock nodemcu API
+tmr.delay = function(us)
+  local t0 = tmr.now()
+  while tmr.now() - t0 <= us do
+  end
+end
+
 return tmr
