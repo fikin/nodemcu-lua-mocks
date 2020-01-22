@@ -15,4 +15,8 @@ node.input = function(str)
   )
 end
 
+node.chipid = function()
+  return math.random(100)
+end
+
 return node
