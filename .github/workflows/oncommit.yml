@@ -12,8 +12,10 @@ jobs:
     - name: update apt repos
       run: sudo apt-get update
     - name: install make and lua
-      run: apt-get -y install make lua5.3
+      run: sudo apt-get -y install make lua5.3
     - name: link /usr/bin/lua
-      run: ln -sf /usr/bin/lua5.3 /usr/bin/lua
+      run: sudo ln -sf /usr/bin/lua5.3 /usr/bin/lua
+    - name: print env
+      run: env && ls -al
     - name: Run lua tests
       run: make test
