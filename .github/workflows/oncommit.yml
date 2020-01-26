@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: update apt repos
-      run: apt-get update
+      run: sudo apt-get update
     - name: install make and lua
       run: apt-get -y install make lua5.3
     - name: link /usr/bin/lua
