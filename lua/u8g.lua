@@ -18,7 +18,7 @@ function Disp:new(o)
   return o
 end
 --- Disp.setFont implements stock nodemcu u8g.disp API
-Disp.setFont = function(self, size)
+Disp.setFont = function(self, font)
 end
 --- Disp.setFontRefHeightExtendedText implements stock nodemcu u8g.disp API
 Disp.setFontRefHeightExtendedText = function(self)

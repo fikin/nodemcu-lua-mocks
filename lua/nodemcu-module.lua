@@ -110,6 +110,9 @@ NodeMCU.reset = function()
 
     --- NodeMCU.pwm contains pwm-module data
     NodeMCU.pwm = {history = {}, duties = {}, clock = nil}
+
+    --- NodeMCU.rotary contains rotary-module data
+    NodeMCU.rotary = {}
 end
 
 NodeMCU.reset()
@@ -266,6 +269,33 @@ NodeMCU.pwm_get_history = function()
     local ret = NodeMCU.pwm.history
     NodeMCU.pwm.history = {}
     return ret
+end
+
+--- NodeMCU.rotary_turn is emulating rotary switch turn with delta steps.
+-- it recalculates the new position and fires set callbacks.
+NodeMCU.rotary_turn = function(channel, deltaSteps)
+    assert(type(channel) == "number", "channel must be number")
+    assert(type(deltaSteps) == "number", "deltaSteps must be number")
+    NodeMCU.rotary[channel + 1].pos = NodeMCU.rotary[channel + 1].pos + deltaSteps
+    for k, v in pairs({8, 63}) do
+        c = NodeMCU.rotary[channel + 1].callbacks[v]
+        if c then
+            c(v, NodeMCU.rotary[channel + 1].pos, os.time())
+        end
+    end
+end
+
+--- NodeMCU.rotary_press is emulating rotary switch press event.
+-- it fires set callbacks.
+NodeMCU.rotary_press = function(channel, eventType)
+    assert(type(channel) == "number", "channel must be number")
+    assert(type(eventType) == "number", "eventType must be number")
+    for k, v in pairs({eventType, 63}) do
+        c = NodeMCU.rotary[channel + 1].callbacks[v]
+        if c then
+            c(v, NodeMCU.rotary[channel + 1].pos, os.time())
+        end
+    end
 end
 
 --- NodeMCU.advanceTime advances the internal NodeMCU time
