@@ -276,11 +276,13 @@ end
 NodeMCU.rotary_turn = function(channel, deltaSteps)
     assert(type(channel) == "number", "channel must be number")
     assert(type(deltaSteps) == "number", "deltaSteps must be number")
-    NodeMCU.rotary[channel + 1].pos = NodeMCU.rotary[channel + 1].pos + deltaSteps
-    for k, v in pairs({8, 63}) do
-        c = NodeMCU.rotary[channel + 1].callbacks[v]
-        if c then
-            c(v, NodeMCU.rotary[channel + 1].pos, os.time())
+    ch = NodeMCU.rotary[channel + 1]
+    assert(ch, "channel not setup yet")
+    ch.pos = ch.pos + deltaSteps
+    for k, v in pairs({eventType, 63}) do
+        cb = ch.callbacks[v]
+        if cb then
+            cb(v, ch.pos, os.time())
         end
     end
 end
@@ -290,10 +292,12 @@ end
 NodeMCU.rotary_press = function(channel, eventType)
     assert(type(channel) == "number", "channel must be number")
     assert(type(eventType) == "number", "eventType must be number")
+    ch = NodeMCU.rotary[channel + 1]
+    assert(ch, "channel not setup yet")
     for k, v in pairs({eventType, 63}) do
-        c = NodeMCU.rotary[channel + 1].callbacks[v]
-        if c then
-            c(v, NodeMCU.rotary[channel + 1].pos, os.time())
+        cb = ch.callbacks[v]
+        if cb then
+            cb(v, ch.pos, os.time())
         end
     end
 end
