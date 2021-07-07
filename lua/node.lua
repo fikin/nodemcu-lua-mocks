@@ -15,4 +15,18 @@ node.input = function(str)
   )
 end
 
+node.chipid = function()
+  return math.random(100)
+end
+
+local bootreason = 1
+
+node.emulateBootreason = function(value)
+  bootreason = value
+end
+
+node.bootreason = function()
+  return bootreason
+end
+
 return node
