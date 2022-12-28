@@ -4,16 +4,25 @@ License : GLPv3, see LICENCE in root of repository
 Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu-module")
+local wiki = require("wifi-constants")
 
+---@class wifi_ap
 local Ap = {}
 Ap.__index = Ap
 
---- Ap.getclient is stock nodemcu API
+---Ap.getclient is stock nodemcu API
 Ap.getclient = function()
   return nodemcu.wifiAP.clients
 end
 
+---@class wifi_ap_config_config
+---@field ssid string
+---@field pwd string
+---@field auth integer
+---@field bssid_set integer
+
 --- Ap.getdefaultconfig is stock nodemcu API
+---@return wifi_ap_config_config
 Ap.getdefaultconfig = function()
   return {
     ssid = "NODEMCU_MOCK",
@@ -24,6 +33,7 @@ Ap.getdefaultconfig = function()
 end
 
 --- Ap.setip is stock nodemcu API
+---@param cfg wifi_ip
 Ap.setip = function(cfg)
   assert(cfg ~= nil, "cfg must be valid object")
   nodemcu.wifiAP.ip = cfg.ip
@@ -43,7 +53,6 @@ end
 
 --- Ap.setmac is stock nodemcu API
 Ap.setmac = function(mac)
-  lu.assertIsString(flg)
   nodemcu.wifiAP.mac = mac
 end
 

@@ -10,15 +10,6 @@ local Timer = require("Timer")
 local wifiConstants = require("wifi-constants")
 local Eventmon = require("wifi-eventmon")
 
--- ######################
--- ######################
--- ######################
-
-local function fire(what, ...)
-  if nodemcu.eventmonCb[what] then
-    nodemcu.eventmonCb[what](...)
-  end
-end
 
 local function queueEvent(fnc)
   Timer.createSingle(nodemcu.wifiSTA.ConnectTimeout, fnc):start()
@@ -29,6 +20,7 @@ end
 -- ######################
 
 -- implements stock nodemcu wifi.Sta API
+---@class wifi_sta
 local Sta = {}
 Sta.__index = Sta
 
@@ -58,12 +50,12 @@ Sta.config = function(cfg)
   nodemcu.wifiSTA.ssid = cfg.ssid
   nodemcu.wifiSTA.pwd = cfg.pwd
   nodemcu.wifiSTA.isConfigOk,
-    nodemcu.wifiSTA.isConnectOk,
-    nodemcu.wifiSTA.bssid,
-    nodemcu.wifiSTA.channel,
-    nodemcu.wifiSTA.ip,
-    nodemcu.wifiSTA.netmask,
-    nodemcu.wifiSTA.gateway = nodemcu.wifiSTA.configStaFnc(cfg)
+      nodemcu.wifiSTA.isConnectOk,
+      nodemcu.wifiSTA.bssid,
+      nodemcu.wifiSTA.channel,
+      nodemcu.wifiSTA.ip,
+      nodemcu.wifiSTA.netmask,
+      nodemcu.wifiSTA.gateway = nodemcu.wifiSTA.configStaFnc(cfg)
   if nodemcu.wifiSTA.isConfigOk and cfg.auto then
     queueEvent(
       function()
@@ -80,7 +72,7 @@ Sta.getconfig = function(flg)
   if nodemcu.wifiSTA.cfg == nil then
     return nil
   elseif flg then
-    return {ssid = nodemcu.wifiSTA.ssid, pwd = nodemcu.wifiSTA.pwd}
+    return { ssid = nodemcu.wifiSTA.ssid, pwd = nodemcu.wifiSTA.pwd }
   else
     return nodemcu.wifiSTA.cfg
   end
@@ -143,6 +135,7 @@ Sta.getap = function(cfg, format, cb)
       end
       return true
     end
+
     local ret = {}
     for bssid, v in pairs(tbl) do
       if filterMatched(cfg, bssid, v) then
@@ -151,6 +144,7 @@ Sta.getap = function(cfg, format, cb)
     end
     return ret
   end
+
   cb(filterRes(cfg, nodemcu.wifiSTA.accessPoints))
 end
 
@@ -161,7 +155,8 @@ local function dispatchDisconnect(currWifiMode)
   )
   queueEvent(
     function()
-      fire(currWifiMode == wifi.STATION and Eventmon.STA_DISCONNECTED or Eventmon.AP_STADISCONNECTED, nil)
+      Eventmon.fire(currWifiMode == wifi.STATION and Eventmon.STA_DISCONNECTED or
+        Eventmon.AP_STADISCONNECTED, nil)
     end
   )
 end
@@ -173,7 +168,7 @@ local function dispatchConnect(currWifiMode)
   )
   queueEvent(
     function()
-      fire(
+      Eventmon.fire(
         currWifiMode == wifi.STATION and Eventmon.STA_CONNECTED or Eventmon.AP_STACONNECTED,
         {
           SSID = nodemcu.wifiSTA.ssid,
@@ -183,7 +178,7 @@ local function dispatchConnect(currWifiMode)
       )
       queueEvent(
         function()
-          fire(
+          Eventmon.fire(
             Eventmon.STA_GOT_IP,
             {
               IP = nodemcu.wifiSTA.ip,
@@ -216,7 +211,10 @@ Sta.disconnect = function(cb)
   assert(nodemcu.wifiSTA.isConfigOk ~= nil)
   assert(nodemcu.wifiSTA.alreadyConnected, "it seems Sta is already disconnected")
   nodemcu.wifiSTA.alreadyConnected = false
-  dispatchDisconnect(wifi.getmode(), cb)
+  if type(cb) == "function" then
+    Eventmon.register(Eventmon.STA_DISCONNECTED, cb)
+  end
+  dispatchDisconnect(wifi.getmode())
 end
 
 return Sta

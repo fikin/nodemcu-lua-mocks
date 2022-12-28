@@ -12,6 +12,10 @@ local duration = {}
 duration.TMR_SWAP_TIME = 1073741823
 duration.TMR_SWAP_TIME = duration.TMR_SWAP_TIME * 2
 
+---calculates delta between two times
+---@param startTime integer
+---@param endTime integer
+---@return integer
 duration.getDelta = function(startTime, endTime)
     local deltaTime = endTime - startTime
     if deltaTime < 0 then

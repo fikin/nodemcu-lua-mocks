@@ -8,15 +8,24 @@ LUA_PATH := $(PRJ_SRC_DIR)/?.lua
 
 LUA_TEST_CASES := $(wildcard $(PRJ_DIR)/test/*est*.lua)
 
-.PHONY: help $(LUA_TEST_CASES)
+# dir where file module would read and write
+NODEMCU_MOCKS_SPIFFS_DIR   :=  target/tests-spiffs
+
+.PHONY: help mock_spiffs_dir $(LUA_TEST_CASES)
 
 help:
 	@echo type: make clean
 	@echo type: make test
 	@echo type: make dist
 
-$(LUA_TEST_CASES):
+mock_spiffs_dir:
+	@mkdir -p $(NODEMCU_MOCKS_SPIFFS_DIR)
+	@rm -rf $(NODEMCU_MOCKS_SPIFFS_DIR)/*
+
+$(LUA_TEST_CASES): mock_spiffs_dir
 	@echo [INFO] : Running tests in $@ ...
-	@export LUA_PATH=$(LUA_PATH) && lua $@
+	@export LUA_PATH=$(LUA_PATH) \
+		&& export NODEMCU_MOCKS_SPIFFS_DIR="$(NODEMCU_MOCKS_SPIFFS_DIR)" \
+		&& lua5.3 $@
 
 test: $(LUA_TEST_CASES)
