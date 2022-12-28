@@ -3,16 +3,20 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
+local JSON = require("JSON")
+
+---@class sjson
 sjson = {}
 sjson.__index = sjson
 
-local JSON = require("JSON")
-
--- implements sjson.decoder methods
+---implements sjson.decoder methods
+---@class sjson_decoder
+---@field _data string
 local JsonDecorer = {}
 JsonDecorer.__index = JsonDecorer
 
 --- JsonDecorer.new instantiates new instance of decoder
+---@return sjson_decoder
 JsonDecorer.new = function()
   local o = {}
   setmetatable(o, JsonDecorer)
@@ -21,6 +25,8 @@ JsonDecorer.new = function()
 end
 
 --- JsonDecorer.write implements stock nodemcu sjson.decoder API
+---@param self sjson_decoder
+---@param data string
 JsonDecorer.write = function(self, data)
   if self._data then
     self._data = self._data .. data
@@ -30,16 +36,28 @@ JsonDecorer.write = function(self, data)
 end
 
 --- JsonDecorer.result implements stock nodemcu sjson.decoder API
+---@param self sjson_decoder
+---@return table
 JsonDecorer.result = function(self)
   --print('sjson: decoding '..self._data..' ...')
-  return JSON:decode(self._data)
+  local ret = JSON:decode(self._data)
+  if type(ret) == "table" then return ret; end
+  error("failed sjson conversion for data=%s, type(data)=%s, res=%s " % { self._data, type(ret), ret })
 end
 
 -- implements sjson.encoder interface
+---@class sjson_encoder
+---@field private _len integer
+---@field private _data string
+---@field private _readStartIndex integer
 local JsonEncoder = {}
 JsonEncoder.__index = JsonEncoder
 
 --- JsonEncoder.new instantiates new encoder object
+
+---new decoder
+---@param obj table
+---@return sjson_encoder
 JsonEncoder.new = function(obj)
   local o = {}
   setmetatable(o, JsonEncoder)
@@ -50,6 +68,9 @@ JsonEncoder.new = function(obj)
 end
 
 --- JsonEncoder.read implements stock nodemcu sjson.encoder API
+---@param self sjson_encoder
+---@param size integer
+---@return string|nil
 JsonEncoder.read = function(self, size)
   assert(type(self) == "table")
   size = size or 1024
@@ -67,13 +88,35 @@ JsonEncoder.read = function(self, size)
 end
 
 --- sjson.decoder is stock nodemcu API
+---@return sjson_decoder
 sjson.decoder = function()
   return JsonDecorer.new()
 end
 
 -- sjson.encoder is stock nodemcu API
+---@param obj table
+---@return sjson_encoder
 sjson.encoder = function(obj)
   return JsonEncoder.new(obj)
+end
+
+---returns given json text as table
+---@param str any
+---@param opts? any
+---@return table
+sjson.decode = function(str, opts)
+  local d = JsonDecorer.new()
+  d:write(str)
+  return d:result()
+end
+
+---returns json text for given table
+---@param tbl table
+---@param opts? table
+---@return string|nil
+sjson.encode = function(tbl, opts)
+  local d = JsonEncoder.new(tbl)
+  return d:read(4096)
 end
 
 return sjson

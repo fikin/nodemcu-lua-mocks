@@ -15,25 +15,24 @@ function testSingle()
   Timer.reset()
   local callsCnt = 0
   local tt = nil
-  local t =
-    Timer.createSingle(
+  local t = Timer.createSingle(
     1,
     function(timerObj)
-      lu.assertEquals(tt, timerObj)
+      tt = timerObj
       callsCnt = callsCnt + 1
     end
   )
-  tt = t
   t:start()
   Timer.joinAll(2)
   lu.assertEquals(callsCnt, 1)
+  lu.assertEquals(tt, t)
 end
 
 function testReoccuring()
   Timer.reset()
   local callsCnt = 0
   local t =
-    Timer.createReoccuring(
+  Timer.createReoccuring(
     1,
     function(timerObj)
       callsCnt = callsCnt + 1
@@ -48,7 +47,7 @@ function testStopFromWithinCallback()
   Timer.reset()
   local callsCnt = 0
   local t =
-    Timer.createReoccuring(
+  Timer.createReoccuring(
     1,
     function(timerObj)
       timerObj:stop()

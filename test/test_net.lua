@@ -10,172 +10,104 @@ local lu = require("luaunit")
 local nodemcu = require("nodemcu")
 local tools = require("tools")
 
-function testConnectTo()
+function testListen()
     nodemcu.reset()
 
-    local con = net.createConnection(net.TCP, false)
-    local w = tools.wrapConnection(con)
+    local conn = nil
+    local listenerCalled = false
+    local function listenerFn(con2)
+        listenerCalled = true
+        conn = con2
+    end
 
-    local s2, w2
-    nodemcu.net_tcp_listener_new(
-        1111,
-        "22.22.22.22",
-        function(con2)
-            assert(con2)
-            s2 = con2
-            w2 =
-                tools.wrapConnection(
-                s2,
-                {
-                    receive = function(con3, data)
-                        con3:send(data .. "1")
-                    end
-                }
-            )
-            return s2
+    local srv = net.createServer()
+    srv:listen(1111, "22.22.22.22", listenerFn)
+
+    -- simulate remote connected to the listener
+    skt = nodemcu.net_tpc_connect_to_listener(1111, "22.22.22.22")
+
+    -- 1byte frame size to test tokenization on receive
+    skt.net_tcp_framesize = 1
+
+    -- track the events in the connection
+    ---@cast ww net_socket_wrapper
+    local ww = {
+        --server side handler of "receive" event
+        receive = function(con3, data)
+            -- echo the data back to remote
+            if data then con3:send(data .. "1"); end
         end
-    )
+    }
+    local w = tools.wrapConnection(skt, ww)
 
-    con:connect(1111, "22.22.22.22")
+    -- simulate remote sent some data
+    skt:sentByRemote("123", true)
+    -- unfold all tcp events in one go (connect+(3+1)xReceived+3xSent+1)
+    nodemcu.advanceTime(9)
+    -- simulate remote closed the connection
+    skt:remoteCloses()
+    nodemcu.advanceTime(2)
 
-    nodemcu.advanceTime(5)
-    lu.assertEquals(table.pack(con:getaddr()), table.pack(s2:getpeer()))
-    lu.assertEquals(table.pack(con:getpeer()), table.pack(s2:getaddr()))
-
-    nodemcu.advanceTime(5)
-    con:send("1")
-    nodemcu.advanceTime(5)
-    con:send("2")
-    nodemcu.advanceTime(5)
-    con:close()
-    nodemcu.advanceTime(5)
-
-    lu.assertEquals(w.sent, 2)
-    lu.assertEquals(w.received, {"11", "21"})
+    lu.assertIsTrue(listenerCalled)
+    lu.assertEquals(conn, skt)
+    lu.assertEquals(w.sent, 3)
+    lu.assertEquals(w.received, { "1", "2", "3" })
     lu.assertEquals(w.connection, 1)
     lu.assertEquals(w.disconnection, 1)
     lu.assertEquals(w.reconnection, 0)
-
-    lu.assertEquals(w2.sent, 2)
-    lu.assertEquals(w2.received, {"1", "2"})
-    lu.assertEquals(w2.connection, 1)
-    lu.assertEquals(w2.disconnection, 1)
-    lu.assertEquals(w2.reconnection, 0)
+    lu.assertEquals(skt:receivedByRemoteAll(), { "11", "21", "31" })
 end
 
-function testTCPNetFrameSize()
+function testConnectClient()
     nodemcu.reset()
-    nodemcu.net_tcp_framesize = 1
 
-    local con = net.createConnection(net.TCP, false)
+    local skt = net.createConnection()
 
-    local s2, w2
-    nodemcu.net_tcp_listener_new(
-        1111,
-        "22.22.22.22",
-        function(con2)
-            s2 = con2
-            w2 = tools.wrapConnection(s2)
-            return s2
-        end
-    )
+    -- track the events in the connection
+    local w = tools.wrapConnection(skt)
+    ---simulates dns lookup
+    skt.insteadOfDnsLookup = function(self, domain)
+        lu.assertEquals(domain, "dummy.local")
+        return "22.22.22.22"
+    end
 
-    con:connect(1111, "22.22.22.22")
-    nodemcu.advanceTime(5)
-    con:send("123")
-    nodemcu.advanceTime(5)
-    con:close()
-    nodemcu.advanceTime(5)
+    skt:dns("dummy.local", function(skt2, ip)
+        lu.assertEquals(ip, "22.22.22.22")
+        skt:connect(1111, ip)
+    end)
+    nodemcu.advanceTime(3)
+    skt:remoteAcceptConnection() -- simulate remote accepting the connection
+    skt:send("1.2")
+    skt:sentByRemote("3.4")
+    nodemcu.advanceTime(4)
+    skt:close()
+    nodemcu.advanceTime(2)
 
-    lu.assertEquals(w2.received, {"1", "2", "3"})
+    lu.assertEquals(w.sent, 1)
+    lu.assertEquals(w.received, { "3.4" })
+    lu.assertEquals(w.connection, 1)
+    lu.assertEquals(w.disconnection, 1)
+    lu.assertEquals(w.reconnection, 0)
+    lu.assertEquals(skt:receivedByRemoteAll(), { "1.2" })
 end
 
-function testConnectionTimeout()
-    nodemcu.reset()
+function testTimeout()
+    local skt = net.createConnection()
 
-    nodemcu.net_tcp_idleiotimeout = 1
+    -- 1ms idle timeout
+    skt.idleTimeout = 1
 
-    local con = net.createConnection(net.TCP, false)
-    local w = tools.wrapConnection(con)
+    -- track the events in the connection
+    local w = tools.wrapConnection(skt)
 
-    local s2, w2
-    nodemcu.net_tcp_listener_new(
-        1111,
-        "22.22.22.22",
-        function(con2)
-            s2 = con2
-            w2 = tools.wrapConnection(s2)
-            return s2
-        end
-    )
-
-    con:connect(1111, "22.22.22.22")
-    nodemcu.advanceTime(5)
+    skt:connect(1111, "1.2.3.4")
+    nodemcu.advanceTime(2)
 
     lu.assertEquals(w.sent, 0)
     lu.assertEquals(w.received, {})
-    lu.assertEquals(w.connection, 1)
+    lu.assertEquals(w.connection, 0)
     lu.assertEquals(w.disconnection, 1)
     lu.assertEquals(w.reconnection, 0)
-
-    lu.assertEquals(w2.sent, 0)
-    lu.assertEquals(w2.received, {})
-    lu.assertEquals(w2.connection, 1)
-    lu.assertEquals(w2.disconnection, 1)
-    lu.assertEquals(w2.reconnection, 0)
-end
-
-function testTCPListener()
-    nodemcu.reset()
-
-    local srv = net.createServer(net.TCP, 30)
-    assert(srv)
-    local s2, w2
-    srv:listen(
-        8080,
-        function(con)
-            assert(not s2)
-            s2 = con
-            w2 =
-                tools.wrapConnection(
-                con,
-                {
-                    receive = function(con3, data)
-                        con3:send(data .. "1")
-                    end
-                }
-            )
-        end
-    )
-
-    local con = net.createConnection(net.TCP, false)
-    local w = tools.wrapConnection(con)
-
-    con:connect(8080, nodemcu.net_ip_get())
-
-    nodemcu.advanceTime(5)
-    lu.assertEquals(table.pack(con:getaddr()), table.pack(s2:getpeer()))
-    lu.assertEquals(table.pack(con:getpeer()), table.pack(s2:getaddr()))
-
-    nodemcu.advanceTime(5)
-    con:send("1")
-    nodemcu.advanceTime(5)
-    con:send("2")
-    nodemcu.advanceTime(5)
-    con:close()
-    nodemcu.advanceTime(5)
-
-    lu.assertEquals(w.sent, 2)
-    lu.assertEquals(w.received, {"11", "21"})
-    lu.assertEquals(w.connection, 1)
-    lu.assertEquals(w.disconnection, 1)
-    lu.assertEquals(w.reconnection, 0)
-
-    lu.assertEquals(w2.sent, 2)
-    lu.assertEquals(w2.received, {"1", "2"})
-    lu.assertEquals(w2.connection, 1)
-    lu.assertEquals(w2.disconnection, 1)
-    lu.assertEquals(w2.reconnection, 0)
 end
 
 os.exit(lu.run())

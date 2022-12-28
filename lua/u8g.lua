@@ -3,20 +3,24 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
+
+---@class u8g
 u8g = {}
 u8g.__index = u8g
 
 u8g.font_6x10 = 1
 
--- represents a display of nodemcu u8g.disp nature
-local Disp = {page = 0}
+---represents a display of nodemcu u8g.disp nature
+---@class u8g_disp
+local Disp = { page = 0 }
+Disp.__index = Disp
+
 --- Disp:new instantiates new u8g.disp object
-function Disp:new(o)
-  o = o or {}
-  setmetatable(o, self)
-  self.__index = self
-  return o
+---@return u8g_disp
+function Disp.new()
+  return setmetatable({}, Disp)
 end
+
 --- Disp.setFont implements stock nodemcu u8g.disp API
 Disp.setFont = function(self, font)
 end
@@ -48,8 +52,10 @@ Disp.nextPage = function(self)
 end
 
 --- u8g.ssd1306_128x64_i2c is stock nodemcu API
+---@param slaAddress integer
+---@return u8g_disp
 u8g.ssd1306_128x64_i2c = function(slaAddress)
-  return Disp:new()
+  return Disp.new()
 end
 
 return u8g

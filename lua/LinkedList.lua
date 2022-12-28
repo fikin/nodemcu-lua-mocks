@@ -7,16 +7,22 @@ Authors : Nikolay Fiykov, v1
 Credits to https://gist.github.com/MichaelCarius/6681865 for offering initial implementation version.
 ]] --
 
+---a linked list
+---@class LinkedList
 local LinkedList = {}
 
+---new list
+---@return LinkedList
 function LinkedList.create()
     local self = {}
 
-    return setmetatable(self, {__index = LinkedList})
+    return setmetatable(self, { __index = LinkedList })
 end
 
+---append at the end of the list
+---@param x any
 function LinkedList:append(x)
-    local node = {data = x, previous = self.tail}
+    local node = { data = x, previous = self.tail }
     self[x] = node
 
     if self.tail then
@@ -28,8 +34,10 @@ function LinkedList:append(x)
     self.tail = node
 end
 
+---append at the front
+---@param x any
 function LinkedList:prepend(x)
-    local node = {data = x, next = self.head}
+    local node = { data = x, next = self.head }
     self[x] = node
 
     if self.head then
@@ -41,9 +49,12 @@ function LinkedList:prepend(x)
     self.head = node
 end
 
+---insert before position
+---@param key any
+---@param x any
 function LinkedList:insertBefore(key, x)
     local keyNode = self[key]
-    local node = {data = x, next = keyNode}
+    local node = { data = x, next = keyNode }
 
     if not keyNode then
         error("bad key")
@@ -61,9 +72,12 @@ function LinkedList:insertBefore(key, x)
     keyNode.previous = node
 end
 
+---insert after position
+---@param key any
+---@param x any
 function LinkedList:insertAfter(key, x)
     local keyNode = self[key]
-    local node = {data = x, previous = keyNode}
+    local node = { data = x, previous = keyNode }
 
     if not keyNode then
         error("bad key")
@@ -81,6 +95,8 @@ function LinkedList:insertAfter(key, x)
     keyNode.next = node
 end
 
+---remove at the position
+---@param x any
 function LinkedList:remove(x)
     local node = self[x]
     self[x] = nil
@@ -102,6 +118,9 @@ function LinkedList:remove(x)
     end
 end
 
+---get position
+---@param x any
+---@return any
 function LinkedList:after(x)
     local node = self[x].next
     if not node then
@@ -111,6 +130,9 @@ function LinkedList:after(x)
     return node.data
 end
 
+---get before position
+---@param x any
+---@return any
 function LinkedList:before(x)
     local node = self[x].previous
     if not node then
@@ -120,6 +142,8 @@ function LinkedList:before(x)
     return node.data
 end
 
+---iterator over all items
+---@return fun():any
 function LinkedList:each()
     local current = self.head
 
@@ -134,6 +158,8 @@ function LinkedList:each()
     end
 end
 
+---clone the list into array
+---@return any[]
 function LinkedList:toArray()
     local o = {}
     local current = self.head
@@ -146,6 +172,8 @@ function LinkedList:toArray()
     return o
 end
 
+---items count
+---@return integer
 function LinkedList:size()
     local count = 0
     local current = self.head
@@ -156,6 +184,9 @@ function LinkedList:size()
     return count
 end
 
+---contains an item at position
+---@param x any
+---@return boolean
 function LinkedList:contains(x)
     return not (not self[x])
 end

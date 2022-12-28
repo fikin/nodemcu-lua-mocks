@@ -10,7 +10,7 @@ local tools = require("tools")
 function testBeforeReadCallback()
   nodemcu.reset()
   nodemcu.dht_read_cb = function(pin)
-    return {dht.OK, 11, 22, 33, 44}
+    return { dht.OK, 11, 22, 33, 44 }
   end
   local status, temperature, humi, temp_decimial, humi_decimial = dht.read(1)
   lu.assertEquals(status, dht.OK)
@@ -23,11 +23,11 @@ end
 function testReadSequence()
   nodemcu.reset()
   nodemcu.dht_read_cb =
-    tools.cbReturnRingBuf(
+  tools.cbReturnRingBuf(
     {
-      {dht.OK, 10, 70, 0, 0},
-      {dht.ERROR_TIMEOUT, 33, 11, 0, 0},
-      {dht.OK, 22, 55, 0, 0}
+      { dht.OK, 10, 70, 0, 0 },
+      { dht.ERROR_TIMEOUT, 33, 11, 0, 0 },
+      { dht.OK, 22, 55, 0, 0 }
     }
   )
   local status, temperature, humi, temp_decimial, humi_decimial = dht.read(1)

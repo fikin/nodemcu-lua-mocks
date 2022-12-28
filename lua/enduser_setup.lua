@@ -5,23 +5,27 @@ Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu-module")
 
+---@class enduser_setup
 enduser_setup = {}
 enduser_setup.__index = enduser_setup
 
---- enduser_setup.manual is stock nodemcu API
+---stock api
+---@param on_off boolean
 enduser_setup.manual = function(on_off)
-  nodemcu.eus_manual = on_off
+  -- TODO add implementation
 end
 
---- enduser_setup.start is stock nodemcu API
--- @param onConnected()
--- @param onError(err_num, string)
--- @param onDebug(string)
+---stock api
+---@param onConnected fun()
+---@param onError fun(err_num:integer, desc:string)
+---@param onDebug fun(desc: string)
 enduser_setup.start = function(onConnected, onError, onDebug)
+  -- TODO add implementation
 end
 
---- enduser_setup.stop is stock nodemcu API
+---stock api
 enduser_setup.stop = function()
+  -- TODO add implementation
 end
 
 return enduser_setup

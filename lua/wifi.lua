@@ -11,17 +11,15 @@ local Ap = require("wifi-ap")
 local Sta = require("wifi-sta")
 local wifi = require("wifi-constants")
 
--- ========================
--- ========================
--- ========================
-
 wifi.sta = Sta
 wifi.eventmon = Eventmon
 wifi.ap = Ap
 
 --- wifi.setmode is stock nodemcu API
+---@param mode integer
 wifi.setmode = function(mode)
-  assert(contains(wifi.wifiModeEnum, mode), "expected model one of " .. inspect(wifi.wifiModeEnum) .. " but found " .. mode)
+  assert(contains(wifi.wifiModeEnum, mode),
+    "expected model one of " .. inspect(wifi.wifiModeEnum) .. " but found " .. mode)
   if mode == wifi.SOFTAP then
     if nodemcu.wifi.mode == wifi.STATION or nodemcu.wifi.mode == wifi.STATIONAP then
       wifi.sta.disconnect()
@@ -31,6 +29,7 @@ wifi.setmode = function(mode)
 end
 
 --- wifi.getmode is stock nodemcu API
+---@return integer
 wifi.getmode = function()
   return nodemcu.wifi.mode
 end
