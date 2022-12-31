@@ -6,23 +6,42 @@ Authors : Nikolay Fiykov, v1
 local nodemcu = require("nodemcu-module")
 local wiki = require("wifi-constants")
 
+---@class wifi_ap_dhcp
+local Dhcp = {}
+Dhcp.__index = Dhcp
+
+---stock API
+---@param dhcp_config table
+Dhcp.config = function(dhcp_config)
+  nodemcu.wifiAP.dhcpConfig = dhcp_config
+end
+
+---stock API
+---@return boolean
+Dhcp.start = function()
+  return true
+end
+
+---stock API
+---@return boolean
+Dhcp.stop = function()
+  return true
+end
+
 ---@class wifi_ap
-local Ap = {}
+local Ap = {
+  dhcp = Dhcp
+}
 Ap.__index = Ap
 
 ---Ap.getclient is stock nodemcu API
+---@return wifi_ap_clients
 Ap.getclient = function()
   return nodemcu.wifiAP.clients
 end
 
----@class wifi_ap_config_config
----@field ssid string
----@field pwd string
----@field auth integer
----@field bssid_set integer
-
 --- Ap.getdefaultconfig is stock nodemcu API
----@return wifi_ap_config_config
+---@return wifi_ap_config
 Ap.getdefaultconfig = function()
   return {
     ssid = "NODEMCU_MOCK",
@@ -33,39 +52,54 @@ Ap.getdefaultconfig = function()
 end
 
 --- Ap.setip is stock nodemcu API
----@param cfg wifi_ip
-Ap.setip = function(cfg)
-  assert(cfg ~= nil, "cfg must be valid object")
-  nodemcu.wifiAP.ip = cfg.ip
-  nodemcu.wifiAP.netmask = cfg.netmask
-  nodemcu.wifiAP.gateway = cfg.gateway
+---@param ip wifi_ip
+---@return boolean
+Ap.setip = function(ip)
+  nodemcu.wifiAP.staticIp = ip
+  return true
 end
 
 --- Ap.getip is stock nodemcu API
+---@return string|nil ip
+---@return string|nil netmask
+---@return string|nil gateway
 Ap.getip = function()
-  return nodemcu.wifiAP.ip, nodemcu.wifiAP.netmask, nodemcu.wifiAP.gateway
+  local i = nodemcu.wifiAP.staticIp
+  if i then
+    return i.ip, i.netmask, i.gateway
+  end
+  return nil, nil, nil
 end
 
 --- Ap.getmac is stock nodemcu API
+---@return string
 Ap.getmac = function()
   return nodemcu.wifiAP.mac
 end
 
 --- Ap.setmac is stock nodemcu API
+---@param mac string
+---@return boolean
 Ap.setmac = function(mac)
   nodemcu.wifiAP.mac = mac
+  return true
 end
 
 --- Ap.config is stock nodemcu API
+---@param cfg wifi_ap_config
+---@return boolean
 Ap.config = function(cfg)
-  if cfg == nil or cfg.ssid == nil then
+  if not (cfg or cfg.ssid) then
     return false
   end
   nodemcu.wifiAP.cfg = cfg
-  return nodemcu.wifiAP.configApFnc(cfg)
+  return true
 end
 
 --- Ap.getconfig implements stock nodemcu wifi.ap API
+---@param flg boolean
+---@return wifi_ap_config|string|nil ssid
+---@return string|nil pwd
 Ap.getconfig = function(flg)
   assert(type(flg) == "boolean", "flg has to be boolean")
   if nodemcu.wifiAP.cfg == nil then

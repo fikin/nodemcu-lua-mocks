@@ -19,29 +19,6 @@ tmr.ALARM_SEMI = 2
 tmr.ALARM_AUTO = 3
 
 
----looks up static timers and returns the one with given index
----@param indx integer
----@return tmr_instance
-local function getExistingTimerObj(indx)
-  local tmrInst = nodemcu.staticTimers[indx + 1]
-  if not tmrInst then
-    error("Cannot start not registered timer with index " .. indx)
-  end
-  return tmrInst
-end
-
----if timerObj is index, returns static timer, othewise timerObj is returned
----@param tmrInst tmr_instance|integer
----@return tmr_instance
-local function resolveTimerObj(tmrInst)
-  if type(tmrInst) == "number" then
-    return getExistingTimerObj(tmrInst)
-  else
-    ---@cast tmrInst tmr_instance
-    return tmrInst
-  end
-end
-
 --- tmr.create is stock nodemcu API
 ---@return tmr_instance
 tmr.create = function()
@@ -52,67 +29,51 @@ tmr.create = function()
 end
 
 --- tmr.register is stock nodemcu API
----@param tmrInst integer|tmr_instance
+---@param self tmr_instance
 ---@param delay integer
 ---@param reoccurType integer
 ---@param cb tmr_fn
-tmr.register = function(tmrInst, delay, reoccurType, cb)
-  --  print('tmr register '..tostring(timerObj)..' '..tostring(delay)..' '..tostring(reoccurType)..' '..tostring(callback))
-  if type(tmrInst) == "number" then
-    local indx = tmrInst + 1
-    tmrInst = tmr.create()
-    tmrInst.indx = indx
-    nodemcu.staticTimers[indx] = tmrInst
-  end
+tmr.register = function(self, delay, reoccurType, cb)
   local cbWrapper = function()
-    ---@cast tmrInst tmr_instance
-    cb(tmrInst)
+    cb(self)
   end
-  tmrInst.timer =
-  reoccurType == tmr.ALARM_AUTO and Timer.createReoccuring(delay, cbWrapper) or Timer.createSingle(delay, cbWrapper)
+  self.timer = (reoccurType == tmr.ALARM_AUTO)
+      and Timer.createReoccuring(delay, cbWrapper)
+      or Timer.createSingle(delay, cbWrapper)
 end
 
 --- tmr.unregister is stock nodemcu API
----@param tmrInst tmr_instance|integer
-tmr.unregister = function(tmrInst)
-  --print('tmr unregister '..tostring(timerObj))
-  tmrInst = resolveTimerObj(tmrInst)
-  tmrInst.timer:stop()
-  tmrInst.timer = nil
-  if tmrInst.indx then
-    nodemcu.staticTimers[tmrInst.indx] = nil
-    tmrInst.indx = nil
-  end
+---@param self tmr_instance
+tmr.unregister = function(self)
+  self.timer:stop()
+  self.timer = nil
 end
 
 --- tmr.start is stock nodemcu API
----@param tmrInst tmr_instance|integer
+---@param self tmr_instance
 ---@return boolean
-tmr.start = function(tmrInst)
-  tmrInst = resolveTimerObj(tmrInst)
-  tmrInst.timer:start()
+tmr.start = function(self)
+  self.timer:start()
   return true
 end
 
 --- tmr.stop is stock nodemcu API
----@param tmrInst tmr_instance|integer
+---@param self tmr_instance
 ---@return boolean
-tmr.stop = function(tmrInst)
-  tmrInst = resolveTimerObj(tmrInst)
-  tmrInst.timer:stop()
+tmr.stop = function(self)
+  self.timer:stop()
   return true
 end
 
 --- tmr.alarm is stock nodemcu API
----@param tmrInst tmr_instance|integer
+---@param self tmr_instance
 ---@param delay integer
 ---@param reoccurType integer
 ---@param cb tmr_fn
 ---@return boolean
-tmr.alarm = function(tmrInst, delay, reoccurType, cb)
-  --print('tmr alarm '..tostring(timerObj)..' '..tostring(delay)..' '..tostring(reoccurType)..' '..tostring(callback))
-  tmr.register(tmrInst, delay, reoccurType, cb)
-  return tmr.start(tmrInst)
+tmr.alarm = function(self, delay, reoccurType, cb)
+  tmr.register(self, delay, reoccurType, cb)
+  return tmr.start(self)
 end
 
 --- tmr.now is stock nodemcu API

@@ -6,6 +6,7 @@ Authors : Nikolay Fiykov, v1
 local Timer = require("Timer")
 local pinState = require("gpio_pin_state")
 local socket = require("net-tcp-socket")
+local fifoArr = require("fifo-arr")
 
 ---NodeMCU is class providing simulated/mocked implementation of nodemcu-firmware functionality
 ---@class NodeMCU
@@ -41,8 +42,6 @@ end
 --=======================
 --=======================
 
----Register nodemcu state reset for the module.
----Overwrite in the test case if needed.
 NodeMCU.add_reset_fn("adc", function()
     ---called each time someone uses adc module.
     ---overwrite on the test cases if required.
@@ -50,8 +49,6 @@ NodeMCU.add_reset_fn("adc", function()
     NodeMCU.adc_read_cb = function() return 1024; end
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("dht", function()
     ---called each time someone is using dht module.
     ---overwrite in test cases if needed.
@@ -60,25 +57,20 @@ NodeMCU.add_reset_fn("dht", function()
     NodeMCU.dht_read_cb = function(pin) return { 1, 0, 0, 0, 0 } end
 end)
 
----register nodemcu state reset for the module
 NodeMCU.add_reset_fn("file-nodemcu", function()
     NodeMCU.t_file_workDir = os.getenv("NODEMCU_MOCKS_SPIFFS_DIR")
+    assert(NodeMCU.t_file_workDir, "env.NODEMCU_MOCKS_SPIFFS_DIR is not defined")
 end)
 
----register nodemcu state reset for the module
 NodeMCU.add_reset_fn("gpio", function()
     NodeMCU.gpio_pins = require("gpio_pin_state").createPins()
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("net", function()
     ---@type tcpServer
     NodeMCU.net_tcp_srv = nil
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("pwm", function()
     NodeMCU.pwm = {
         history = {},
@@ -87,77 +79,151 @@ NodeMCU.add_reset_fn("pwm", function()
     }
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("rotary", function()
     ---@type rotary_rec[]
     NodeMCU.rotary = {}
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("rtcmem", function()
     ---@type integer[]
     NodeMCU.rtcmem = {}
+    for i = 0, 255 do
+        NodeMCU.rtcmem[i] = math.random(0, 255)
+    end
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
-NodeMCU.add_reset_fn("tmr", function()
-    NodeMCU.staticTimers = {}
-end)
+---data object used by nodemcu.fireWifiEvent.
+---do not use directly!
+---@class wifi_internal_event
+---@field eventType integer
+---@field payload {[string]:string|integer}
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("wifi", function()
     NodeMCU.wifi = {
-        mode = wifi.NULLMODE
+        ---@type wifi_country
+        country = nil,
+        phymode = wifi.PHYMODE_B,
+        maxpower = 128,
+        mode = wifi.NULLMODE,
+        ---this is internal eventsQueue event type
+        ConnectingEvent = 101,
+        eventsQueue = fifoArr.new(),
     }
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
+---definition of an Access Point to which wifi.sta would "connect" to.
+---@class wifi_internal_sta_ap
+---@field ssid string
+---if left nil it leads to disconnected-wrong-pwd event.
+---@field pwd string
+---@field bssid string
+---@field channel integer
+---by default one must define the IP wifi.sta would get assigned.
+---if left nil, it signifies that test case will send got-ip event
+---on its own or dhcp-timeout event will trigger (connectingTimeout).
+---@field dhcp? wifi_ip
+
 NodeMCU.add_reset_fn("wifi-sta", function()
     NodeMCU.wifiSTA = {
-        ConnectTimeout = 1,
-        autoconnect = false,
-        ap_index = 0,
-        hostname = nil,
+        ---@type wifi_sta_config
         cfg = nil,
-        isConfigOk = false,
-        isConnectOk = false,
-        bssid = nil,
-        channel = 0,
-        ip = nil,
-        netmask = nil,
-        gateway = nil,
-        alreadyConnected = false,
-        accessPoints = {},
-        configStaFnc = NodeMCU.wifiSTAdefaultNoConfigStaFnc
+        ---@type string
+        hostname = nil,
+        mac = "AA:BB:CC:DD",
+        ---@type wifi_ip
+        staticIp = nil,
+        sleepType = 0,
+        status = wifi.STA_IDLE,
+
+        ---field assigned once connect() starts.
+        ---it is used internally to track wifi connection timeout.
+        connectionStartTs = 0,
+        ---timeout to auto-fail sta.connecting if AccessPoint or AccessPoint.dhcp are not defined meantime.
+        connectingTimeout = 2,
+        ---when has got ip, it is assigned either to AccessPoint.dhcp or staticIp
+        ---@type wifi_ip
+        assignedIp = nil,
+        ---backs wifi.sta.getapindex/changeap
+        ap_index = 1,
+
+        ---test cases assign this setting to simulate AP to which wifi.sta will connect to.
+        ---if left nil, it indicates that test case will send (dis)connected event on its own.
+        ---of wifi control loop will send disconnected/ap-not-found after connectingTimeout.
+        ---@type wifi_internal_sta_ap
+        AccessPoint = nil,
+        ---backs wifi.sta.getap(), test cases can assign any function they want.
+        ---@param cfg? {[string]:string}
+        ---@param format? integer
+        ---@param cb fun(tbl:{[string]:string})
+        GetAP = function(cfg, format, cb) end,
     }
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("wifi-eventmon", function()
     ---@type wifi_eventmon_fn[]
-    NodeMCU.eventmonCb = {}
+    NodeMCU.wifiEventmonTbl = {}
 end)
 
----register nodemcu state reset for the module
----overwrite in the test case if needed.
 NodeMCU.add_reset_fn("wifi-ap", function()
     NodeMCU.wifiAP = {
-        mac = "AA:BB:CC:DD:EE:FF",
-        clients = {},
-        ip = nil,
-        gateway = nil,
-        netmask = nil,
-        ---@type wifi_ap_config_config
+        ---@type wifi_ap_config
         cfg = nil,
-        configApFnc = function(cfg)
-            return false
-        end
+        ---@type string
+        hostname = nil,
+        ---@type wifi_ip
+        staticIp = nil,
+        ---@type table
+        dhcpConfig = {},
+        mac = "AA:BB:CC:DD:EE:FF",
+        ---@type wifi_ap_clients
+        clients = {},
+    }
+end)
+
+NodeMCU.add_reset_fn("rtctime", function()
+    ---@type rtctime_ts
+    NodeMCU.rtctime = {
+        sec = 0,
+        usec = 0,
+        rate = 0
+    }
+end)
+
+NodeMCU.add_reset_fn("wifi-eventmon", function()
+    ---@type wifi_eventmon_fn[]
+    NodeMCU.wifiEventmonTbl = {}
+end)
+
+NodeMCU.add_reset_fn("node", function()
+    ---overwrite in the test case if some other values are needed
+    NodeMCU.node = {
+        ---@type node_parttable
+        parttable = {
+            lfs_addr = 0x1000,
+            lfs_size = 0x2000,
+            spiffs_addr = 0x10000,
+            spiffs_size = 0x2000
+        },
+        bootreason = {
+            rawcode = 0,
+            reason = 0
+        },
+        chipid = 1234567890,
+    }
+end)
+
+NodeMCU.add_reset_fn("ow", function()
+    NodeMCU.ow = {
+        ---@type integer
+        pin = nil,
+        ---value of select(rom)
+        ---@type ow_rom
+        selected_rom = nil,
+
+        ---ROM code returned by search() function.
+        ---test cases can assign value they expect here.
+        ---@type ow_rom
+        Rom = nil,
     }
 end)
 
@@ -222,60 +288,18 @@ NodeMCU.pwm_get_history = function()
     return ret
 end
 
---- NodeMCU.net_ip_get returns IP address assigned to nodemcu
----@return string sta.ip or ap.ip or "0.0.0.0" if not connected
-NodeMCU.net_ip_get = function()
-    if NodeMCU.wifi.mode == wifi.NULLMODE then
-        return "0.0.0.0"
-    elseif NodeMCU.wifi.mode == wifi.STATION or NodeMCU.wifi.mode == wifi.STATIONAP then
-        return NodeMCU.wifiSTA.ip
-    else
-        return NodeMCU.wifiAP.ip
-    end
+---Dispatch Wifi event to control loop.
+---@param eventType integer
+---@param payload {[string]:any}
+NodeMCU.fireWifiEvent = function(eventType, payload)
+    NodeMCU.wifi.eventsQueue:push({ eventType = eventType, payload = payload })
 end
 
---- NodeMCU.wifiSTA defaultConfigStaFnc is simulating connection to some AP
--- @return isConfigOk boolean indicating if cfg is ok
--- following values are meaningful if isConfigOk = true
--- @return isConnectOk boolean indicating that nodemcu can connect to AP (credentials ok)
--- following values are meaningful if isConnectOk = true
--- @return mac defaults to "AA:BB:CC:DD:EE:FF"
--- @return channel defaults to 11
--- @return ip defaults to "192.168.255.11"
--- @return nestmask defaults to "255.255.255.0"
--- @return gateway defaults to "192.168.255.1"
-NodeMCU.wifiSTAdefaultConfigStaFnc = function(cfg)
-    return false, true, "AA:BB:CC:DD:EE:FF", 11, "192.168.255.11", "255.255.255.0", "192.168.255.1"
-end
-NodeMCU.wifiSTAdefaultNoConfigStaFnc = function(cfg)
-    return false, false, nil, 0, nil, nil, nil
-end
-
---- wifiSTAsetConfigFnc is callback to simulate wifi connection to an AP
--- cb = function(cfg) isConfigOk, isConnectOk, bssid, channel, ip, netmask, gateway
--- it is called each time Sta.config(cfg) is called to determine what to do with that connection request.
--- see also defaultConfigStaFnc
-NodeMCU.wifiSTAsetConfigFnc = function(cb)
-    NodeMCU.wifiSTA.configStaFnc = cb
-end
-
---- NodeMCU.wifiSTAsetAP assigns access points list to be returned by Sta.getap()
--- @param tbl is table in the format of key=bssid and value="ssid, rssi, authmode, channel"
-NodeMCU.wifiSTAsetAP = function(tbl)
-    NodeMCU.wifiSTA.accessPoints = tbl
-end
-
---- NodeMCU.wifiAPsetClients assigns clients table connected to AP
+---NodeMCU.wifiAPsetClients assigns clients table connected to AP
 ---lst is list of {mac="..",ip="..."} object
----@param lst any
+---@param lst {[string]:string}
 NodeMCU.wifiAPsetClients = function(lst)
     NodeMCU.wifiAP.clients = lst
-end
-
---- NodeMCU.wifiAPsetConfigFnc assigns callback used by Ap.config
----cb is function(cfg) true|false
-NodeMCU.wifiAPsetConfigFnc = function(cb)
-    NodeMCU.wifiAP.configApFnc = cb
 end
 
 --=======================

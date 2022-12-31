@@ -26,6 +26,11 @@ require("pwm")
 require("net")
 require("tmr")
 require("wifi")
+require("wifi-control")
 require("rtcmem")
+require("rtctime")
+require("crypto")
+require("encoder")
+require("ow")
 
 return nodemcu

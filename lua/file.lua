@@ -32,7 +32,7 @@ end
 ---@return string|nil
 file.getcontents = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, _ = openFileFn(fileLoc(loc), "r")
+  local f, err = openFileFn(fileLoc(loc), "r")
   if not f then
     return nil
   end
@@ -42,13 +42,13 @@ file.getcontents = function(loc)
 end
 
 ---file.open is stock nodemcu API
----@param name string
+---@param loc string
 ---@param mode string
 ---@return file_obj?
-file.open = function(name, mode)
-  assert(type(name) == "string", "name must be string")
+file.open = function(loc, mode)
+  assert(type(loc) == "string", "name must be string")
   assert((file.obj and file.obj:isClosed()) or not file.obj, "file.obj is not closed")
-  local f, _ = openFileFn(name, mode)
+  local f, err = openFileFn(fileLoc(loc), mode)
   if f then
     file.obj = f
   end
@@ -60,7 +60,7 @@ end
 ---@return boolean
 file.exists = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, _ = openFileFn(fileLoc(loc), "r")
+  local f, err = openFileFn(fileLoc(loc), "r")
   if f then
     f:close()
     return true
@@ -72,8 +72,7 @@ end
 ---@param loc string
 file.remove = function(loc)
   assert(type(loc) == "string", "location must be string")
-  loc = nodemcu.t_file_workDir .. "/" .. loc
-  os.remove(loc)
+  os.remove(fileLoc(loc))
 end
 
 ---file.putcontents is stick nodemcu API
@@ -83,7 +82,7 @@ end
 file.putcontents = function(loc, data)
   assert(type(loc) == "string", "location must be string")
   assert(data ~= nil, "data is nil")
-  local f, _ = openFileFn(fileLoc(loc), "w")
+  local f, err = openFileFn(fileLoc(loc), "w")
   if f then
     f:write(data)
     f:close()
@@ -99,9 +98,7 @@ end
 file.rename = function(oldname, newname)
   assert(type(oldname) == "string", "oldname must be string")
   assert(type(newname) == "string", "newname must be string")
-  oldname = nodemcu.t_file_workDir .. "/" .. oldname
-  newname = nodemcu.t_file_workDir .. "/" .. newname
-  return os.rename(oldname, newname)
+  return os.rename(fileLoc(oldname), fileLoc(newname))
 end
 
 ---@class file_stat
@@ -114,8 +111,6 @@ end
 file.stat = function(loc)
   assert(type(loc) == "string", "location must be string")
   local f, err = openFileFn(fileLoc(loc), "r")
-  assert(f)
-  assert(err == nil)
   if f then
     local sz = f:seek("end")
     f:close()

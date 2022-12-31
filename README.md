@@ -166,4 +166,6 @@ GPLv3, see LICENSE file
 Contributions :
 
 * src/contrib/lua/JSON.lua, see its header.
+* src/contrib/lua/md5.lua, see its header.
+* src/contrib/lua/sha2.lua, see its header.
 * [luaunit](https://github.com/bluebird75/luaunit), see library's own details

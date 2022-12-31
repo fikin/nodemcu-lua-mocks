@@ -4,10 +4,8 @@ License : GLPv3, see LICENCE in root of repository
 Authors : Nikolay Fiykov, v1
 --]]
 local inspect = require("inspect")
-local contains = require("contains")
 local nodemcu = require("nodemcu-module")
 local Timer = require("Timer")
-local wifiConstants = require("wifi-constants")
 local Eventmon = require("wifi-eventmon")
 
 
@@ -24,66 +22,54 @@ end
 local Sta = {}
 Sta.__index = Sta
 
+---stock API
+---@param tbl boolean
+---@return wifi_sta_config
+Sta.getdefaultconfig = function(tbl)
+  return {
+    ssid = "undefined",
+    pwd = "undefined",
+    bssid_set = 0,
+    bssid = "undefined",
+  }
+end
+
 --- Sta.config is stock nodemcu API
+---@param cfg wifi_sta_config
+---@return boolean
 Sta.config = function(cfg)
   if cfg == nil or cfg.ssid == nil then
     return false
   end
-  assert(type(cfg.ssid) == "string", "cfg.ssid must be a string")
-  assert(type(cfg.pwd) == "string", "cfg.pwd must be a string")
   nodemcu.wifiSTA.cfg = cfg
-  if type(cfg.connected_cb) == "function" then
-    Eventmon.register(Eventmon.STA_CONNECTED, cfg.connected_cb)
-  end
-  if type(cfg.disconnected_cb) == "function" then
-    Eventmon.register(Eventmon.STA_DISCONNECTED, cfg.disconnected_cb)
-  end
-  if type(cfg.authmode_change_cb) == "function" then
-    Eventmon.register(Eventmon.STA_AUTHMODE_CHANGE, cfg.authmode_change_cb)
-  end
-  if type(cfg.got_ip_cb) == "function" then
-    Eventmon.register(Eventmon.STA_GOT_IP, cfg.got_ip_cb)
-  end
-  if type(cfg.dhcp_timeout_cb) == "function" then
-    Eventmon.register(Eventmon.STA_DHCP_TIMEOUT, cfg.dhcp_timeout_cb)
-  end
-  nodemcu.wifiSTA.ssid = cfg.ssid
-  nodemcu.wifiSTA.pwd = cfg.pwd
-  nodemcu.wifiSTA.isConfigOk,
-      nodemcu.wifiSTA.isConnectOk,
-      nodemcu.wifiSTA.bssid,
-      nodemcu.wifiSTA.channel,
-      nodemcu.wifiSTA.ip,
-      nodemcu.wifiSTA.netmask,
-      nodemcu.wifiSTA.gateway = nodemcu.wifiSTA.configStaFnc(cfg)
-  if nodemcu.wifiSTA.isConfigOk and cfg.auto then
-    queueEvent(
-      function()
-        Sta.connect()
-      end
-    )
-  end
-  return nodemcu.wifiSTA.isConfigOk
+  -- control loop will take care of connection sequence if auto==true
+  return true
 end
 
 --- Sta.getconfig is stock nodemcu API
+---@param flg boolean
+---@return nil|string|wifi_sta_config
+---@return nil|string
 Sta.getconfig = function(flg)
   assert(type(flg) == "boolean", "flg must be a boolean")
   if nodemcu.wifiSTA.cfg == nil then
-    return nil
+    return nil, nil
   elseif flg then
-    return { ssid = nodemcu.wifiSTA.ssid, pwd = nodemcu.wifiSTA.pwd }
-  else
     return nodemcu.wifiSTA.cfg
+  else
+    return nodemcu.wifiSTA.cfg.ssid, nodemcu.wifiSTA.cfg.pwd
   end
 end
 
 --- Sta.autoconnect is stock nodemcu API
+---@param oneOrZero integer
 Sta.autoconnect = function(oneOrZero)
-  nodemcu.wifiSTA.autoconnect = oneOrZero
+  assert(nodemcu.wifiSTA.cfg, "call autoconnect() after config()")
+  nodemcu.wifiSTA.cfg.auto = oneOrZero == 1 and true or false
 end
 
 --- Sta.changeap is stock nodemcu API
+---@param ap_index integer
 Sta.changeap = function(ap_index)
   assert(type(ap_index) == "number")
   assert(flg < 5 and flg > 0, "expects 0<ap_index<6 but found " .. inspect(ap_index))
@@ -91,130 +77,92 @@ Sta.changeap = function(ap_index)
 end
 
 --- Sta.getapindex is stock noemcu API
+---@return integer
 Sta.getapindex = function()
   return nodemcu.wifiSTA.ap_index
 end
 
 --- Sta.sethostname is stock nodemcu API
+---@param name string
+---@return boolean true if set ok, else false
 Sta.sethostname = function(name)
   assert(type(name) == "string")
   nodemcu.wifiSTA.hostname = name
+  return true
 end
 
 --- Sta.gethostname is stock nodemcu API
+---@return string|nil
 Sta.gethostname = function()
   return nodemcu.wifiSTA.hostname
 end
 
 --- Sta.getip is stock nodemcu API
+---@return string|nil ip
+---@return string|nil netmask
+---@return string|nil gateway
 Sta.getip = function()
-  return nodemcu.wifiSTA.ip, nodemcu.wifiSTA.netmask, nodemcu.wifiSTA.gateway
+  local i = nodemcu.wifiSTA.assignedIp
+  if i then
+    return i.ip, i.netmask, i.gateway
+  end
+  return nil, nil, nil
 end
 
 --- Sta.getap is stock nodemcu API
+---@param cfg? {[string]:string}
+---@param format? integer
+---@param cb fun(ap:{[string]:string})
 Sta.getap = function(cfg, format, cb)
-  if type(cfg) == "function" then
-    cb = cfg
-    cfg = nil
-  end
-  cfg = cfg or {}
-  format = format or 0
-  assert(format == 1, "supported is format=1 only")
-  assert(type(cb) == "function", "cb must be defined")
-  local function filterRes(cfg, tbl)
-    local function filterMatched(cfg, bssid, val)
-      if cfg.bssid and cfg.bssid ~= bssid then
-        return false
-      end
-      local ssid, rssi, authmode, channel = string.match(val, "([^,]+),([^,]+),([^,]+),([^,]*)")
-      if cfg.ssid and cfg.ssid ~= ssid then
-        return false
-      end
-      if cfg.channel and cfg.channel ~= channel then
-        return false
-      end
-      return true
-    end
-
-    local ret = {}
-    for bssid, v in pairs(tbl) do
-      if filterMatched(cfg, bssid, v) then
-        ret[bssid] = v
-      end
-    end
-    return ret
-  end
-
-  cb(filterRes(cfg, nodemcu.wifiSTA.accessPoints))
-end
-
-local function dispatchDisconnect(currWifiMode)
-  assert(
-    contains(wifiConstants.stationModeEnum, currWifiMode),
-    "expected currWifiMode one of " .. inspect(wifiConstants.stationModeEnum) .. " but found " .. currWifiMode
-  )
-  queueEvent(
-    function()
-      Eventmon.fire(currWifiMode == wifi.STATION and Eventmon.STA_DISCONNECTED or
-        Eventmon.AP_STADISCONNECTED, nil)
-    end
-  )
-end
-
-local function dispatchConnect(currWifiMode)
-  assert(
-    contains(wifiConstants.stationModeEnum, currWifiMode),
-    "expected currWifiMode one of " .. inspect(wifiConstants.stationModeEnum) .. " but found " .. currWifiMode
-  )
-  queueEvent(
-    function()
-      Eventmon.fire(
-        currWifiMode == wifi.STATION and Eventmon.STA_CONNECTED or Eventmon.AP_STACONNECTED,
-        {
-          SSID = nodemcu.wifiSTA.ssid,
-          BSSID = nodemcu.wifiSTA.bssid,
-          channel = nodemcu.wifiSTA.channel
-        }
-      )
-      queueEvent(
-        function()
-          Eventmon.fire(
-            Eventmon.STA_GOT_IP,
-            {
-              IP = nodemcu.wifiSTA.ip,
-              netmask = nodemcu.wifiSTA.netmask,
-              gateway = nodemcu.wifiSTA.gateway
-            }
-          )
-        end
-      )
-    end
-  )
+  nodemcu.wifiSTA.GetAP(cfg, format, cb)
 end
 
 --- Sta.connect is stock nodemcu API
+---@param cb? wifi_eventmon_fn
 Sta.connect = function(cb)
-  assert(nodemcu.wifiSTA.isConfigOk ~= nil)
-  assert(not nodemcu.wifiSTA.alreadyConnected, "it seems Sta is already connected ")
   if type(cb) == "function" then
     Eventmon.register(Eventmon.STA_CONNECTED, cb)
   end
-  if nodemcu.wifiSTA.isConnectOk then
-    nodemcu.wifiSTA.alreadyConnected = true
-    dispatchConnect(wifi.getmode())
-  else
-    dispatchDisconnect(wifi.getmode())
-  end
+  nodemcu.fireWifiEvent(nodemcu.wifi.ConnectingEvent, {})
 end
 
+---stock API
+---@param cb? wifi_eventmon_fn
 Sta.disconnect = function(cb)
-  assert(nodemcu.wifiSTA.isConfigOk ~= nil)
-  assert(nodemcu.wifiSTA.alreadyConnected, "it seems Sta is already disconnected")
-  nodemcu.wifiSTA.alreadyConnected = false
   if type(cb) == "function" then
     Eventmon.register(Eventmon.STA_DISCONNECTED, cb)
   end
-  dispatchDisconnect(wifi.getmode())
+  nodemcu.fireWifiEvent(wifi.eventmon.STA_DISCONNECTED, { reason = wifi.eventmon.reason.UNSPECIFIED })
+end
+
+---stock API
+---@param staticIp wifi_ip
+---@return boolean
+Sta.setip = function(staticIp)
+  nodemcu.wifiSTA.staticIp = staticIp
+  return true
+end
+
+---stock API
+---@param sleepType integer
+---@return boolean
+Sta.sleeptype = function(sleepType)
+  nodemcu.wifiSTA.sleeptype = sleepType
+  return true
+end
+
+---stock API
+---@param mac string
+---@return boolean
+Sta.setmac = function(mac)
+  nodemcu.wifiSTA.mac = mac
+  return true
+end
+
+---stock API
+---@return integer
+Sta.status = function()
+  return nodemcu.wifiSTA.status
 end
 
 return Sta
