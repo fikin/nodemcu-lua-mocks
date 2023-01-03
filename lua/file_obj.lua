@@ -17,8 +17,10 @@ FileObj.FILE_READ_CHUNK = 1024
 ---close the file
 ---@param self file_obj
 FileObj.close = function(self)
-  self._fd:close()
-  self._isClosed = true
+  if not self:isClosed() then
+    self._fd:close()
+    self._isClosed = true
+  end
 end
 
 ---true if the file is already closed

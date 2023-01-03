@@ -67,8 +67,8 @@ NodeMCU.add_reset_fn("gpio", function()
 end)
 
 NodeMCU.add_reset_fn("net", function()
-    ---@type tcpServer
-    NodeMCU.net_tcp_srv = nil
+    ---@type {[integer]:tcpServer}
+    NodeMCU.net_tcp_srv = {}
 end)
 
 NodeMCU.add_reset_fn("pwm", function()
@@ -271,11 +271,11 @@ end
 ---@param remoteIp string
 ---@return socket
 NodeMCU.net_tpc_connect_to_listener = function(listenerPort, remoteIp)
-    local cb = NodeMCU.net_tcp_srv._listeners[tostring(listenerPort)]
-    assert(cb, string.format("no listener on port %s found", listenerPort))
-    local skt = socket.new(NodeMCU.net_tcp_srv._timeout * 1000)
+    local srv = NodeMCU.net_tcp_srv[listenerPort]
+    assert(srv, string.format("no listener on port %s found", listenerPort))
+    local skt = socket.new(srv._timeout * 1000)
     skt:connect(math.random(22000, 22999), remoteIp)
-    cb(skt)
+    srv._listener(skt)
     skt:remoteAcceptConnection()
     return skt
 end

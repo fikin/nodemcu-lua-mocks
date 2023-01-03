@@ -22,7 +22,6 @@ tmr.ALARM_AUTO = 3
 --- tmr.create is stock nodemcu API
 ---@return tmr_instance
 tmr.create = function()
-  --print('tmr create')
   local o = {}
   setmetatable(o, tmr)
   return o
