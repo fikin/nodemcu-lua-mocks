@@ -15,9 +15,12 @@ rtctime.__index = rtctime
 ---@field rate integer the current clock rate offset.
 
 ---stock API
----@return rtctime_ts
+---@return integer
+---@return integer
+---@return integer
 rtctime.get = function()
-  return nodemcu.rtctime
+  local ts = nodemcu.rtctime
+  return ts.sec, ts.usec, ts.rate
 end
 
 ---stock API
