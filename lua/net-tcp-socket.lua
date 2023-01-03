@@ -80,6 +80,41 @@ local socket = {
 }
 socket.__index = socket
 
+---@param self socket
+local function dispathStackWithTcpEvents(self)
+    while self._tcpEvents:hasMore() do
+        local data = assert(self._tcpEvents:pop())
+        if data.eventType == "dns-request" then
+            local ip = self.insteadOfDnsLookup(self, data.payload)
+            if ip then self._on.dns(self, ip); end
+        else
+            if data.eventType == "sent" then self._sent:push(data.payload);
+            elseif data.eventType == "receive" then self._received:push(data.payload); end
+            local fn = self._on[data.eventType] or function(_, _)
+                error(string.format("unsupported tcp event type \"%s\" with payload \"%s\"", data.eventType, data.payload))
+            end
+            fn(self, data.payload)
+        end
+    end
+end
+
+---@param self socket
+local function handleIoInactivity(self)
+    local now = Timer.getCurrentTimeMs()
+    if Timer.hasDelayElapsedSince(now, self._lastActivityTs, self.idleTimeout) then
+        self.remoteCloses(self, "io inactivity timeout")
+    else
+        self._lastActivityTs = now
+    end
+end
+
+---used internally to exchange data b/n remote and local
+---@param self socket
+local function controlLoop(self)
+    dispathStackWithTcpEvents(self)
+    handleIoInactivity(self)
+end
+
 ---used to instantiate new socket, called by net.listener or net.createConnection
 ---@param idleTimeoutMs integer idle connection timeout in ms
 ---@return socket
@@ -108,8 +143,16 @@ socket.new = function(idleTimeoutMs)
         idleTimeout = idleTimeoutMs,
     }
     setmetatable(o, socket)
-    o._tmr = Timer.createReoccuring(1, function() o:controlLoop(); end)
+    o._tmr = Timer.createReoccuring(1, function() controlLoop(o); end)
     return o
+end
+
+---used internally to signify that connection
+---has been established b/n remote and local.
+---called by socket.connect or net.listener.
+---@param self socket
+local function startControlLoop(self)
+    self._tmr:start()
 end
 
 ---used internally to exchange some commands b/n remote and local
@@ -118,43 +161,8 @@ end
 ---@param payload? string
 ---@private
 socket.sendTcpEvent = function(self, eventType, payload)
+    assert(eventType)
     self._tcpEvents:push({ eventType = eventType, payload = payload })
-end
-
----used internally to exchange data b/n remote and local
----@param self socket
----@private
-socket.controlLoop = function(self)
-    -- handle stack of tcp events
-    while self._tcpEvents:hasMore() do
-        local data = assert(self._tcpEvents:pop())
-        if data.eventType == "dns-request" then
-            local ip = self.insteadOfDnsLookup(self, data.payload)
-            if ip then self._on.dns(self, ip); end
-        else
-            local fn = self._on[data.eventType] or function(self, data)
-                error("unsupported tcp event type %s" % data.payload)
-            end
-            fn(self, data.payload)
-            if data.eventType == "sent" then self._sent:push(data.payload);
-            elseif data.eventType == "receive" then self._received:push(data.payload); end
-        end
-    end
-    -- handle timeout inactivity
-    local now = Timer.getCurrentTimeMs()
-    if Timer.hasDelayElapsedSince(now, self._lastActivityTs, self.idleTimeout) then
-        self.remoteCloses(self, "io inactivity timeout")
-    end
-    self._lastActivityTs = now
-end
-
----used internally to signify that connection
----has been established b/n remote and local.
----called by socket.connect or net.listener.
----@param self socket
----@private
-socket.startControlLoop = function(self)
-    self._tmr:start()
 end
 
 ---called by unit tests to simulate sending data to local
@@ -233,8 +241,11 @@ end
 ---stock API
 ---@param self socket
 socket.close = function(self)
-    self._isClosed = true
-    self.sendTcpEvent(self, "disconnection", "user closed the connection")
+    if not self._isClosed then
+        self._isClosed = true
+        self.sendTcpEvent(self, "disconnection", "user closed the connection")
+        controlLoop(self) -- ensure stack with events is over before closing
+    end
 end
 
 ---stock API
@@ -243,7 +254,7 @@ end
 ---@param ip string
 socket.connect = function(self, port, ip)
     self._remoteAddr = addrObj.new(ip)
-    self.startControlLoop(self)
+    startControlLoop(self)
 end
 
 ---stock API.
@@ -255,7 +266,7 @@ end
 socket.dns = function(self, domain, cb)
     self._on.dns = cb
     self:sendTcpEvent("dns-request", domain)
-    self.startControlLoop(self)
+    startControlLoop(self)
 end
 
 ---stock API

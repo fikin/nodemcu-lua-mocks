@@ -4,42 +4,8 @@ License : GLPv3, see LICENCE in root of repository
 Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu-module")
-local tmr = require("tmr")
-
----@class node_lfs
-local LFS = {}
-LFS.__index = LFS
-
----stock API
----@return table
-LFS.list = function()
-  -- TODO
-  return {}
-end
-
----stock API
----@param modName any
----@return nil
-LFS.get = function(modName)
-  -- TODO
-  return nil
-end
-
----@class node_task
-local Task = {
-  LOW_PRIORITY = 0,
-  MEDIUM_PRIORITY = 1,
-  HIGH_PRIORITY = 2,
-}
-Task.__index = Task
-
----stock API
----@param prio? integer
----@param fnc fun()
-Task.post = function(prio, fnc)
-  if type(prio) == "function" then fnc = prio; end
-  tmr.create():alarm(1, tmr.ALARM_SINGLE, fnc)
-end
+local LFS = require("node-lfs")
+local Task = require("node-task")
 
 ---@class node
 node = {
@@ -98,6 +64,11 @@ end
 ---@return integer
 node.chipid = function()
   return nodemcu.node.chipid
+end
+
+---stock API
+node.restart = function()
+  error("FIXME node.restart() is not implemented")
 end
 
 return node

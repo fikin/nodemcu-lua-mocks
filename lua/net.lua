@@ -17,40 +17,39 @@ net.UDP = 2
 ---stock API, implements net.tcp server
 ---@class tcpServer
 local tcpServer = {
-  ---@private
+  ---server's timeput
+  ---@type integer
   _timeout = 10,
-  ---@private
-  ---@type table<string,socket_fn>
-  _listeners = {},
+  ---listener's ip if provided
+  ---@type string|nil
+  _ip = nil,
+  ---server's listener function
+  ---@type socket_fn
+  _listener = nil,
 }
 tcpServer.__index = tcpServer
 
 ---new instance of tcp server
----@param timeout any
+---@param timeout? integer
 ---@return tcpServer
 tcpServer.new = function(timeout)
-  return setmetatable({
-    _timeout = timeout,
-    _listeners = {},
-  }, tcpServer)
+  return setmetatable({ _timeout = timeout or 30 }, tcpServer)
 end
 
 ---stock net.tcp server API
 ---@param self tcpServer
----@param port? integer
+---@param port integer
 ---@param ip? string
 ---@param cb socket_fn
 tcpServer.listen = function(self, port, ip, cb)
+  assert(port)
   local ccc = (type(cb) == "function" and cb) or
-      (type(ip) == "function" and ip) or
-      (type(port) == "function" and port)
+      (type(ip) == "function" and ip)
   assert(ccc, string.format("missing listener function for port %d", port))
-  ip = (type(ip) == "string" and ip) or
-      (type(port) == "string" and tostring(port))
-      or "localhost"
-  port = (type(port) == "number" and port) or math.random(10000, 20000)
+  ip = (type(ip) == "string" and ip) or "localhost"
   ---@cast ccc socket_fn
-  self._listeners[tostring(port)] = ccc
+  self._listener = ccc
+  nodemcu.net_tcp_srv[port] = self
 end
 
 
@@ -60,9 +59,7 @@ end
 ---@return tcpServer
 net.createServer = function(timeoutSec)
   timeoutSec = timeoutSec or 30
-  local o = tcpServer.new(timeoutSec)
-  nodemcu.net_tcp_srv = o
-  return o
+  return tcpServer.new(timeoutSec)
 end
 
 ---net.createConnection is stock nodemcu API
