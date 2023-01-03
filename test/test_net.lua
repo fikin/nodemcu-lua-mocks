@@ -21,7 +21,7 @@ function testListen()
     end
 
     local srv = net.createServer()
-    srv:listen(1111, "22.22.22.22", listenerFn)
+    srv:listen(1111, listenerFn)
 
     -- simulate remote connected to the listener
     skt = nodemcu.net_tpc_connect_to_listener(1111, "22.22.22.22")

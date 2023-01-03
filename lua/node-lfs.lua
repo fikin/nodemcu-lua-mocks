@@ -30,7 +30,12 @@ local function getLFSfun()
 end
 
 ---@class node_lfs
-local LFS = {}
+local LFS = {
+    ---fixed value, overwrite in test cases if required.
+    ---BUT pay attention this is not reset with nodemcu.reset(),
+    ---you need to start new test case althogether.
+    time = 1669271656
+}
 LFS.__index = LFS
 
 ---stock API

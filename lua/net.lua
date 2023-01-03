@@ -39,16 +39,11 @@ end
 ---stock net.tcp server API
 ---@param self tcpServer
 ---@param port integer
----@param ip? string
 ---@param cb socket_fn
-tcpServer.listen = function(self, port, ip, cb)
+tcpServer.listen = function(self, port, cb)
   assert(port)
-  local ccc = (type(cb) == "function" and cb) or
-      (type(ip) == "function" and ip)
-  assert(ccc, string.format("missing listener function for port %d", port))
-  ip = (type(ip) == "string" and ip) or "localhost"
-  ---@cast ccc socket_fn
-  self._listener = ccc
+  assert(cb, string.format("missing listener function for port %d", port))
+  self._listener = cb
   nodemcu.net_tcp_srv[port] = self
 end
 
