@@ -271,8 +271,8 @@ end
 
 ---stock API
 ---@param self socket
----@return integer
----@return string
+---@return integer port
+---@return  string ip
 socket.getpeer = function(self)
     local a = self._remoteAddr
     return a.port, a.ip

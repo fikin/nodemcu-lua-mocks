@@ -12,8 +12,11 @@ Dhcp.__index = Dhcp
 
 ---stock API
 ---@param dhcp_config table
+---@return pool_startip string
+---@return pool_endip string
 Dhcp.config = function(dhcp_config)
   nodemcu.wifiAP.dhcpConfig = dhcp_config
+  return dhcp_config.start or "0.0.0.128", "0.0.0.255"
 end
 
 ---stock API
