@@ -71,4 +71,10 @@ node.restart = function()
   error("FIXME node.restart() is not implemented")
 end
 
+---stock API
+---@return integer heap for now it is fixed to 32096 value
+node.heap = function ()
+  return 32096
+end
+
 return node
