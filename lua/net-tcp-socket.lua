@@ -175,7 +175,7 @@ socket.sentByRemote = function(self, data, isEOF)
             self:sendTcpEvent("receive", str)
         end
     end
-    isEOF = isEOF or true
+    isEOF = (isEOF == nil) and true or isEOF
     if isEOF then
         self:sendTcpEvent("receive", nil)
     end
@@ -243,7 +243,7 @@ end
 socket.close = function(self)
     if not self._isClosed then
         self._isClosed = true
-        self.sendTcpEvent(self, "disconnection", "user closed the connection")
+        self.sendTcpEvent(self, "disconnection", nil)
         controlLoop(self) -- ensure stack with events is over before closing
     end
 end
@@ -296,7 +296,7 @@ end
 ---stock API
 ---@param self socket
 ---@param on string
----@param cb socket_fn
+---@param cb socket_fn|nil
 socket.on = function(self, on, cb)
     self._on[on] = cb
 end

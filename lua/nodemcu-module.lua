@@ -209,6 +209,7 @@ NodeMCU.add_reset_fn("node", function()
             reason = 0
         },
         chipid = 1234567890,
+        restartRequested = false,
     }
 end)
 

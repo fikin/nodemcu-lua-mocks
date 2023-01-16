@@ -68,7 +68,7 @@ end
 
 ---stock API
 node.restart = function()
-  error("FIXME node.restart() is not implemented")
+  nodemcu.node.restartRequested = true
 end
 
 ---stock API
