@@ -16,4 +16,9 @@ mdns.register = function(hostname, attributes)
   -- TODO add implementation
 end
 
+---stock nodemcu API
+mdns.close = function()
+  -- TODO add implementation
+end
+
 return mdns

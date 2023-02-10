@@ -32,5 +32,6 @@ require("rtctime")
 require("crypto")
 require("encoder")
 require("ow")
+require("sntp")
 
 return nodemcu
