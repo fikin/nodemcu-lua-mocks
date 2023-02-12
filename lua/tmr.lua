@@ -78,7 +78,7 @@ end
 --- tmr.now is stock nodemcu API
 ---@return integer
 tmr.now = function()
-  return (Timer.getCurrentTimeMs() % require("duration").TMR_SWAP_TIME) * 1000 -- return microsec, mimic 31 bit cycle over
+  return require("tmrNow")()
 end
 
 --- tmr.delay is stock nodemcu API

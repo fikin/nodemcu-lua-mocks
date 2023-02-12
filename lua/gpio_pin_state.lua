@@ -18,10 +18,12 @@ local PinState = {
         return 1 --gpio.HIGH
     end,
     ---@type fun(pin:integer, value:integer)
-    cbOnWrite = function(_) end,
+    cbOnWrite = function(_)
+    end,
     trigWhat = "none",
     ---@type gpio_trig_fn
-    trigCb = function() end
+    trigCb = function()
+    end
 }
 
 ---new pin
@@ -67,7 +69,7 @@ PinState.changePinValue = function(pinState, val)
     if (val == 1 and contains({ "up", "high", "both" }, pinState.trigWhat)) or
         (val == 0 and contains({ "down", "low", "both" }, pinState.trigWhat))
     then
-        pinState.trigCb(val, os.time())
+        pinState.trigCb(val, require("tmrNow")())
     end
 end
 
