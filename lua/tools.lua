@@ -3,7 +3,6 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
-
 local tools = {}
 tools.__index = tools
 
@@ -71,7 +70,8 @@ tools.collectDataToArray = function()
     return o
 end
 
-local function emptyFnc() end
+local function emptyFnc()
+end
 
 ---@class net_socket_wrapper
 ---@field sent socket
@@ -142,6 +142,41 @@ tools.wrapConnection = function(con, cb)
         end
     )
     return w
+end
+
+---@class tools_pipe
+---@field read fun(self:tools_pipe,len:integer):string|nil
+---@field write fun(self:tools_pipe,data:string)
+
+---same as pipe.create(cb) signature
+---@alias tools_pipe_create_cb fun(pipe:tools_pipe):boolean
+
+---create new pipe object, used in node.output
+---@return tools_pipe
+tools.new_pipe = function()
+    local buf = ""
+    return {
+        read = function(self, len)
+            local ret = string.sub(buf, 1, len)
+            buf = string.sub(buf, len + 1)
+            return ret
+        end,
+        write = function(self, data)
+            assert(type(data) == "string")
+            buf = buf .. data
+        end,
+    }
+end
+
+---returns input table with applied fnc(value) function to each item
+---@param tbl table
+---@return table
+tools.tblMap = function(tbl, fnc)
+    local ret = {}
+    for k, v in ipairs(tbl) do
+        ret[k] = fnc(v)
+    end
+    return ret
 end
 
 return tools

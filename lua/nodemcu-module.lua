@@ -134,7 +134,6 @@ NodeMCU.add_reset_fn("wifi-sta", function()
         staticIp = nil,
         sleepType = 0,
         status = wifi.STA_IDLE,
-
         ---field assigned once connect() starts.
         ---it is used internally to track wifi connection timeout.
         connectionStartTs = 0,
@@ -145,7 +144,6 @@ NodeMCU.add_reset_fn("wifi-sta", function()
         assignedIp = nil,
         ---backs wifi.sta.getapindex/changeap
         ap_index = 1,
-
         ---test cases assign this setting to simulate AP to which wifi.sta will connect to.
         ---if left nil, it indicates that test case will send (dis)connected event on its own.
         ---of wifi control loop will send disconnected/ap-not-found after connectingTimeout.
@@ -155,7 +153,8 @@ NodeMCU.add_reset_fn("wifi-sta", function()
         ---@param cfg? {[string]:string}
         ---@param format? integer
         ---@param cb fun(tbl:{[string]:string})
-        GetAP = function(cfg, format, cb) end,
+        GetAP = function(cfg, format, cb)
+        end,
     }
 end)
 
@@ -210,6 +209,10 @@ NodeMCU.add_reset_fn("node", function()
         },
         chipid = 1234567890,
         restartRequested = false,
+        outputPipe = require("tools").new_pipe(),
+        outputFn = false,
+        outputToSerial = true,
+        inputStr = "",
     }
 end)
 
@@ -220,7 +223,6 @@ NodeMCU.add_reset_fn("ow", function()
         ---value of select(rom)
         ---@type ow_rom
         selected_rom = nil,
-
         ---ROM code returned by search() function.
         ---test cases can assign value they expect here.
         ---@type ow_rom
