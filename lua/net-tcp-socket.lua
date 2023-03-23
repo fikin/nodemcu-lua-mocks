@@ -14,7 +14,8 @@ local fifoArr = require("fifo-arr")
 
 ---do nothing function, used as dummy socket event handler
 ---@type socket_fn
-local function doNothingSelfFnc(self, data) end
+local function doNothingSelfFnc(self, data)
+end
 
 ---represents port+ip pair
 ---@class addrObj
@@ -88,10 +89,15 @@ local function dispathStackWithTcpEvents(self)
             local ip = self.insteadOfDnsLookup(self, data.payload)
             if ip then self._on.dns(self, ip); end
         else
-            if data.eventType == "sent" then self._sent:push(data.payload);
-            elseif data.eventType == "receive" then self._received:push(data.payload); end
-            local fn = self._on[data.eventType] or function(_, _)
-                error(string.format("unsupported tcp event type \"%s\" with payload \"%s\"", data.eventType, data.payload))
+            if data.eventType == "sent" then
+                self._sent:push(data.payload);
+            elseif data.eventType == "receive" then
+                self._received:push(data.payload);
+            end
+            local fn = self._on[data.eventType]
+            if fn == nil then
+                error(string.format("unsupported tcp event type \"%s\" with payload \"%s\"", data.eventType, data
+                .payload))
             end
             fn(self, data.payload)
         end
@@ -298,7 +304,7 @@ end
 ---@param on string
 ---@param cb socket_fn|nil
 socket.on = function(self, on, cb)
-    self._on[on] = cb
+    self._on[on] = cb or doNothingSelfFnc
 end
 
 ---stock API
