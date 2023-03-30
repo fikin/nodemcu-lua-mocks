@@ -80,11 +80,11 @@ local adsInst        = {
   ---@type string
   model = nil,
   ---@type number
-  volt = nil,
+  volt = 0,
   ---@type integer|nil
   volt_dec = nil,
   ---@type integer
-  raw = nil,
+  raw = 0,
   ---@type integer|nil
   sign = nil,
   ---@type integer|nil
