@@ -213,6 +213,7 @@ NodeMCU.add_reset_fn("node", function()
         outputFn = false,
         outputToSerial = true,
         inputStr = "",
+        cpufreq = 80,
     }
 end)
 
