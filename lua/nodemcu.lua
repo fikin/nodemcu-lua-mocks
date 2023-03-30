@@ -11,6 +11,7 @@ Authors : Nikolay Fiykov, v1
 local nodemcu = require("nodemcu-module")
 require("bit")
 require("adc")
+require("ads1115")
 require("dht")
 require("i2c")
 require("mdns")

@@ -89,4 +89,12 @@ tmr.delay = function(us)
   end
 end
 
+---stock API
+---for the moment its value is identical to tmr.now
+---for future some other idea might be thought of
+---@return integer
+tmr.ccount = function()
+  return tmr.now()
+end
+
 return tmr

@@ -108,4 +108,10 @@ node.heap = function()
   return 32096
 end
 
+---stock API
+---@return number one or 80 or 160
+node.getcpufreq = function ()
+  return nodemcu.node.cpufreq
+end
+  
 return node
