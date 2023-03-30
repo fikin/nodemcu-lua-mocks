@@ -6,7 +6,7 @@ Authors : Nikolay Fiykov, v1
 local nodemcu = require("nodemcu-module")
 
 ---adc module
----@class crypto
+---@class adc
 adc = {}
 adc.__index = adc
 
