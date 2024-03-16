@@ -5,6 +5,7 @@ Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu-module")
 local socket = require("net-tcp-socket")
+local udpsocket = require("net-udp-socket")
 
 ---stock API, implements net package
 ---@class net
@@ -16,17 +17,10 @@ net.UDP = 2
 
 ---stock API, implements net.tcp server
 ---@class tcpServer
-local tcpServer = {
-  ---server's timeput
-  ---@type integer
-  _timeout = 10,
-  ---listener's ip if provided
-  ---@type string|nil
-  _ip = nil,
-  ---server's listener function
-  ---@type socket_fn
-  _listener = nil,
-}
+local tcpServer = {}
+tcpServer._timeout = 10
+tcpServer._ip = nil
+tcpServer._listener = nil
 tcpServer.__index = tcpServer
 
 ---new instance of tcp server
@@ -49,7 +43,7 @@ end
 
 
 
---- net.createServer is stock nodemcu API
+---stock nodemcu API
 ---@param timeoutSec? integer
 ---@return tcpServer
 net.createServer = function(timeoutSec)
@@ -57,10 +51,16 @@ net.createServer = function(timeoutSec)
   return tcpServer.new(timeoutSec)
 end
 
----net.createConnection is stock nodemcu API
+---stock nodemcu API
 ---@return socket
 net.createConnection = function()
   return socket.new(30000)
+end
+
+---stock nodemcu API
+---@return udpsocket
+net.createUDPSocket = function()
+  return udpsocket.new(30000)
 end
 
 return net
