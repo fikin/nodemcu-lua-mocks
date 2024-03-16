@@ -7,16 +7,14 @@ local nodemcu = require("nodemcu-module")
 local bit32 = require("bit32")
 
 ---@class rtcmem
-rtctime = {}
-rtctime.__index = rtctime
+rtcmem = {}
+rtcmem.__index = rtcmem
 
 ---stock API
--- @param channel must be 0
--- @return value from cb. If cb is not assigned, returns fixed 1024.
 ---@param indx integer
 ---@param num? integer
 ---@return integer
-rtctime.read32 = function(indx, num)
+rtcmem.read32 = function(indx, num)
   -- TODO add support for num
   num = num or 1
 
@@ -30,10 +28,10 @@ end
 ---stock API
 ---@param indx integer index
 ---@param ... integer byte values, each in own position
-rtctime.write32 = function(indx, ...)
+rtcmem.write32 = function(indx, ...)
   for i, val in ipairs(table.pack(...)) do
     nodemcu.rtcmem[indx + i - 1] = val
   end
 end
 
-return rtctime
+return rtcmem

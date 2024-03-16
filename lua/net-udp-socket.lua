@@ -11,44 +11,58 @@ local Timer = require("Timer")
 local fifoArr = require("fifo-arr")
 local netTools = require("net-tools")
 
----do nothing function, used as dummy socket event handler
----@type socket_fn
+---@alias udpsocket_fn fun(skt:udpsocket, data?: string)
+
+---do nothing function, used as dummy udpsocket event handler
+---@type udpsocket_fn
 local function doNothingSelfFnc(self, data)
 end
 
 ---table with event callbacks, used internally
----@class socketCallbacksTbl
----@field connection    socket_fn
----@field reconnection  socket_fn
----@field disconnection socket_fn
----@field receive       socket_fn
----@field sent          socket_fn
----@field dns           socket_fn
+---@class udpSocketCallbacksTbl
+---@field connection    udpsocket_fn
+---@field reconnection  udpsocket_fn
+---@field disconnection udpsocket_fn
+---@field receive       udpsocket_fn
+---@field sent          udpsocket_fn
+---@field dns           udpsocket_fn
 
----represent net.tcp.socket object
----@class socket
-local socket = {
-    ---@private
+---function used in tests to mimic dns lookup for a given socker
+---@alias testDnsLookupFn fun(self:udpsocket,domain:string):string|nil
+
+---represent net.tcp.udpsocket object
+---@class udpsocket
+---@field _localAddr addrObj private field
+---@field _remoteAddr addrObj private field
+---@field _sent fifoArr private field
+---@field _received fifoArr private field
+---@field _udpEvents fifoArr private field
+---@field _holdOn boolean private field
+---@field _ttl integer private field
+---@field _isClosed boolean private field, true if socker is closed
+---@field net_tcp_framesize integer tcp frame size, overwrite in test cases if needed
+---@field _on udpSocketCallbacksTbl table with event callbacks, used internally, do not touch directly = {
+---substitutes calling actual dns lookup in test cases.
+---by default returns 11.22.33.44 for all requests.
+---overwrite it in the unit test if different behaviour is needed.
+---@field insteadOfDnsLookup testDnsLookupFn
+---@field _tmr TimerObj timer object, running events/data exchange b/n remote and local
+---timestamp tracking last io activity, used internally in conjection with _idleTimeout
+---@private
+---@field _lastActivityTs integer timestamp tracking last io activity, used internally in conjection with _idleTimeout
+---@field idleTimeout integer idle io time before connection will be auto-closed. by default 10ms. overwrite in the unit test if different value is needed.
+
+---@type udpsocket
+local udpsocket = {
     _localAddr = netTools.newAddrObj(),
-    ---@private
     _remoteAddr = netTools.newAddrObj(),
-    ---@private
     _sent = fifoArr.new(),
-    ---@private
     _received = fifoArr.new(),
-    ---@private
-    _tcpEvents = fifoArr.new(),
-    ---@private
+    _udpEvents = fifoArr.new(),
     _holdOn = false,
-    ---@private
     _ttl = 10,
-    ---true if the connection is closed
-    ---@private
     _isClosed = false,
-    ---tcp frame size, overwrite in test cases if needed
     net_tcp_framesize = 1024,
-    ---table with event callbacks, used internally, do not touch directly
-    ---@private
     _on = {
         connection = doNothingSelfFnc,
         reconnection = doNothingSelfFnc,
@@ -57,30 +71,17 @@ local socket = {
         sent = doNothingSelfFnc,
         dns = doNothingSelfFnc
     },
-    ---substitutes calling actual dns lookup in test cases.
-    ---by default returns 11.22.33.44 for all requests.
-    ---overwrite it in the unit test if different behaviour is needed.
-    ---@param self socket
-    ---@param domain string
-    ---@return string|nil ip address which will be passed to "dns" callback. if nil, dns cb is not called.
     insteadOfDnsLookup = function(self, domain) return "11.22.33.44"; end,
-    ---timer object, running events/data exchange b/n remote and local
-    ---@private
     _tmr = Timer.createReoccuring(1, doNothingSelfFnc),
-    ---timestamp tracking last io activity, used internally in conjection with _idleTimeout
-    ---@private
     _lastActivityTs = Timer.getCurrentTimeMs(),
-    ---idle io time before connection will be auto-closed.
-    ---by default 10ms
-    ---overwrite in the unit test if different value is needed.
     idleTimeout = 10,
 }
-socket.__index = socket
+udpsocket.__index = udpsocket
 
----@param self socket
+---@param self udpsocket
 local function dispathStackWithTcpEvents(self)
-    while self._tcpEvents:hasMore() do
-        local data = assert(self._tcpEvents:pop())
+    while self._udpEvents:hasMore() do
+        local data = assert(self._udpEvents:pop())
         if data.eventType == "dns-request" then
             local ip = self.insteadOfDnsLookup(self, data.payload)
             if ip then self._on.dns(self, ip); end
@@ -93,14 +94,14 @@ local function dispathStackWithTcpEvents(self)
             local fn = self._on[data.eventType]
             if fn == nil then
                 error(string.format("unsupported tcp event type \"%s\" with payload \"%s\"", data.eventType, data
-                .payload))
+                    .payload))
             end
             fn(self, data.payload)
         end
     end
 end
 
----@param self socket
+---@param self udpsocket
 local function handleIoInactivity(self)
     local now = Timer.getCurrentTimeMs()
     if Timer.hasDelayElapsedSince(now, self._lastActivityTs, self.idleTimeout) then
@@ -111,19 +112,19 @@ local function handleIoInactivity(self)
 end
 
 ---used internally to exchange data b/n remote and local
----@param self socket
+---@param self udpsocket
 local function controlLoop(self)
     dispathStackWithTcpEvents(self)
     handleIoInactivity(self)
 end
 
----used to instantiate new socket, called by net.listener or net.createConnection
+---used to instantiate new udpsocket, called by net.listener or net.createConnection
 ---@param idleTimeoutMs integer idle connection timeout in ms
----@return socket
-socket.new = function(idleTimeoutMs)
+---@return udpsocket
+udpsocket.new = function(idleTimeoutMs)
     local o = {
-        _localAddr = netTools.newAddrObj,
-        _remoteAddr = netTools.newAddrObj,
+        _localAddr = netTools.newAddrObj(),
+        _remoteAddr = netTools.newAddrObj(),
         _sent = fifoArr.new(),
         _received = fifoArr.new(),
         _tcpEvents = fifoArr.new(),
@@ -144,34 +145,34 @@ socket.new = function(idleTimeoutMs)
         _lastActivityTs = Timer.getCurrentTimeMs(),
         idleTimeout = idleTimeoutMs,
     }
-    setmetatable(o, socket)
+    setmetatable(o, udpsocket)
     o._tmr = Timer.createReoccuring(1, function() controlLoop(o); end)
     return o
 end
 
 ---used internally to signify that connection
 ---has been established b/n remote and local.
----called by socket.connect or net.listener.
----@param self socket
+---called by udpsocket.connect or net.listener.
+---@param self udpsocket
 local function startControlLoop(self)
     self._tmr:start()
 end
 
 ---used internally to exchange some commands b/n remote and local
----@param self socket
----@param eventType string text name of any of the socket events
+---@param self udpsocket
+---@param eventType string text name of any of the udpsocket events
 ---@param payload? string
 ---@private
-socket.sendTcpEvent = function(self, eventType, payload)
+udpsocket.sendTcpEvent = function(self, eventType, payload)
     assert(eventType)
     self._tcpEvents:push({ eventType = eventType, payload = payload })
 end
 
 ---called by unit tests to simulate sending data to local
----@param self socket
+---@param self udpsocket
 ---@param data string|nil if nil, no data is being sent
 ---@param isEOF? boolean if true, EOF is sent to local, by default true
-socket.sentByRemote = function(self, data, isEOF)
+udpsocket.sentByRemote = function(self, data, isEOF)
     if data then
         for _, str in ipairs(tokenize(self.net_tcp_framesize, data)) do
             self:sendTcpEvent("receive", str)
@@ -185,9 +186,9 @@ end
 
 ---called by unit tests to read sent by local data.
 ---this call returns data not read since last call.
----@param self socket
+---@param self udpsocket
 ---@return string[]
-socket.receivedByRemote = function(self)
+udpsocket.receivedByRemote = function(self)
     local arr = {}
     while self._sent:hasMore() do
         table.insert(arr, self._sent:pop())
@@ -198,9 +199,9 @@ end
 ---called by unit tests to read all sent by local data
 ---this method returns all received data, regadless is
 ---it has been read or not.
----@param self socket
+---@param self udpsocket
 ---@return table
-socket.receivedByRemoteAll = function(self)
+udpsocket.receivedByRemoteAll = function(self)
     return self._sent:getAll()
 end
 
@@ -208,24 +209,24 @@ end
 ---this method returns all received data, regadless is
 ---it has been read or not.
 ---"nil" item would indicate EOF.
----@param self socket
+---@param self udpsocket
 ---@return any[]
-socket.receivedByLocalAll = function(self)
+udpsocket.receivedByLocalAll = function(self)
     return self._received:getAll()
 end
 
 ---called by unit tests to trigger connection closing
 ---initiated by remote. local receives an event.
----@param self socket
+---@param self udpsocket
 ---@param reason? string
-socket.remoteCloses = function(self, reason)
+udpsocket.remoteCloses = function(self, reason)
     self.sendTcpEvent(self, "disconnection", reason or "remote is closed")
 end
 
 ---called by unit tests to trigger connection reconnection
 ---initiated by remote. local receives an event.
----@param self socket
-socket.remoteReconnects = function(self)
+---@param self udpsocket
+udpsocket.remoteReconnects = function(self)
     self.sendTcpEvent(self, "reconnection")
 end
 
@@ -235,14 +236,14 @@ end
 ---if called right after skt:connect(), it indicates the connection did not happen.
 ---if remoteAcceptConnection() is called instead, it indicates connection happened
 ---and transfer of data can commense.
----@param self socket
-socket.remoteAcceptConnection = function(self)
+---@param self udpsocket
+udpsocket.remoteAcceptConnection = function(self)
     self.sendTcpEvent(self, "connection", "remote accepted the connection")
 end
 
 ---stock API
----@param self socket
-socket.close = function(self)
+---@param self udpsocket
+udpsocket.close = function(self)
     if not self._isClosed then
         self._isClosed = true
         self.sendTcpEvent(self, "disconnection", nil)
@@ -250,64 +251,50 @@ socket.close = function(self)
     end
 end
 
----stock API
----@param self socket
----@param port integer
----@param ip string
-socket.connect = function(self, port, ip)
-    self._remoteAddr = netTools.newAddrObj(ip)
-    startControlLoop(self)
-end
-
 ---stock API.
----these requests are resolved by "socket.insteadOfDnsLookup" function.
----unit test author can assign new function logic here.
----@param self socket
+---these requests are resolved by udpsocket._onDnsRequest function.
+---unit test auther can assign new function logic here.
+---@param self udpsocket
 ---@param domain any
 ---@param cb any
-socket.dns = function(self, domain, cb)
+udpsocket.dns = function(self, domain, cb)
     self._on.dns = cb
     self:sendTcpEvent("dns-request", domain)
     startControlLoop(self)
 end
 
 ---stock API
----@param self socket
+---@param self udpsocket
 ---@return integer port
 ---@return  string ip
-socket.getpeer = function(self)
+udpsocket.getpeer = function(self)
     local a = self._remoteAddr
     return a.port, a.ip
 end
 
 ---stock API
----@param self socket
+---@param self udpsocket
 ---@return integer
 ---@return string
-socket.getaddr = function(self)
+udpsocket.getaddr = function(self)
     local a = self._localAddr
     return a.port, a.ip
 end
 
 ---stock API
----@param self socket
-socket.hold = function(self)
-    self._holdOn = true
-end
-
----stock API
----@param self socket
+---@param self udpsocket
 ---@param on string
 ---@param cb socket_fn|nil
-socket.on = function(self, on, cb)
+udpsocket.on = function(self, on, cb)
     self._on[on] = cb or doNothingSelfFnc
 end
 
 ---stock API
----@param self socket
----@param data any
----@param cb? socket_fn
-socket.send = function(self, data, cb)
+---@param self udpsocket
+---@param port integer
+---@param ip string
+---@param data string
+udpsocket.send = function(self, port, ip, data)
     if cb then
         self._on.sent = cb
     end
@@ -315,20 +302,14 @@ socket.send = function(self, data, cb)
 end
 
 ---stock API
----@param self socket
+---@param self udpsocket
 ---@param ttl any
 ---@return integer
-socket.ttl = function(self, ttl)
+udpsocket.ttl = function(self, ttl)
     if ttl then
         self._ttl = ttl
     end
     return self._ttl
 end
 
----stock API
----@param self socket
-socket.unhold = function(self)
-    self._holdOn = false
-end
-
-return socket
+return udpsocket
