@@ -113,5 +113,11 @@ end
 node.getcpufreq = function ()
   return nodemcu.node.cpufreq
 end
+
+---stock API
+---@param us integer delay in microseconds
+node.delay = function (us)
+  -- TODO : how to advance time? Do we really need to delay anything in mocked tests?
+end
   
 return node
