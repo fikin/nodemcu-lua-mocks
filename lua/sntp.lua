@@ -10,7 +10,7 @@ sntp = {}
 sntp.__index = sntp
 
 ---sntp.register is stock nodemcu API
----@param server_ips string[]
+---@param server_ips string[]|nil
 ---@param callbackOnOk? fun()
 ---@param errcallback? fun()
 ---@param autorepeat? any

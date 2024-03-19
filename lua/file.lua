@@ -41,6 +41,25 @@ file.getcontents = function(loc)
   return str
 end
 
+---file.writeline is stock nodemcu API
+---@param pattern string|nil lua pattern filtering file names
+---@return {string:integer} table filename and size
+file.list = function(pattern)
+  pattern = pattern or ".*"
+  assert(type(pattern) == "string", "pattern must be string or nil")
+  local arr = {}
+  local iter = io.popen(string.format("ls \"%s\"", fileLoc("")))
+  if iter then
+    for f in iter:lines() do
+      local i, j = string.find(f, pattern)
+      if i then
+        table.insert(arr, f)
+      end
+    end
+  end
+  return arr
+end
+
 ---file.open is stock nodemcu API
 ---@param loc string
 ---@param mode string

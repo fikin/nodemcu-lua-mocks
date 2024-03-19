@@ -45,4 +45,9 @@ function testRenameRemoveExistsStatOk()
     file.remove(newLoc)
 end
 
+function testListFiles()
+    nodemcu.reset()
+    lu.assertEquals(file.list(), { "aa.txt" })
+end
+
 os.exit(lu.run())
