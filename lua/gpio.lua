@@ -6,7 +6,6 @@ Authors : Nikolay Fiykov, v1
 local nodemcu = require("nodemcu-module")
 local inspect = require("inspect")
 local contains = require("contains")
-local pinState = require("gpio_pin_state")
 
 ---@class gpio
 gpio = {}

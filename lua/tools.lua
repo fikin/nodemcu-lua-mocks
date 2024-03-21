@@ -157,11 +157,13 @@ tools.new_pipe = function()
     local buf = ""
     return {
         read = function(self, len)
+            assert(self ~= nil)
             local ret = string.sub(buf, 1, len)
             buf = string.sub(buf, len + 1)
             return ret
         end,
         write = function(self, data)
+            assert(self ~= nil)
             assert(type(data) == "string")
             buf = buf .. data
         end,

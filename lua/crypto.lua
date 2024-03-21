@@ -3,24 +3,14 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
-local nodemcu = require("nodemcu-module")
 
 ---adc module
 ---@class crypto
 crypto = {}
 crypto.__index = crypto
 
----@enum crypto_alg
-local algs = {
-  ["MD5"] = "MD5",
-  ["SHA1"] = "SHA1",
-  ["SHA256"] = "SHA256",
-  ["SHA384"] = "SHA384",
-  ["SHA512"] = "SHA512",
-}
-
 ---stock API
----@param algo crypto_alg
+---@param algo string
 ---@param str string
 ---@return string
 crypto.hash = function(algo, str)

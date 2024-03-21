@@ -32,7 +32,7 @@ end
 ---@return string|nil
 file.getcontents = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, err = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(fileLoc(loc), "r")
   if not f then
     return nil
   end
@@ -51,7 +51,7 @@ file.list = function(pattern)
   local iter = io.popen(string.format("ls \"%s\"", fileLoc("")))
   if iter then
     for f in iter:lines() do
-      local i, j = string.find(f, pattern)
+      local i, _ = string.find(f, pattern)
       if i then
         table.insert(arr, f)
       end
@@ -67,7 +67,7 @@ end
 file.open = function(loc, mode)
   assert(type(loc) == "string", "name must be string")
   assert((file.obj and file.obj:isClosed()) or not file.obj, "file.obj is not closed")
-  local f, err = openFileFn(fileLoc(loc), mode)
+  local f, _ = openFileFn(fileLoc(loc), mode)
   if f then
     file.obj = f
   end
@@ -79,7 +79,7 @@ end
 ---@return boolean
 file.exists = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, err = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(fileLoc(loc), "r")
   if f then
     f:close()
     return true
@@ -101,7 +101,7 @@ end
 file.putcontents = function(loc, data)
   assert(type(loc) == "string", "location must be string")
   assert(data ~= nil, "data is nil")
-  local f, err = openFileFn(fileLoc(loc), "w")
+  local f, _ = openFileFn(fileLoc(loc), "w")
   if f then
     f:write(data)
     f:close()
@@ -129,7 +129,7 @@ end
 ---@return file_stat|nil
 file.stat = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, err = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(fileLoc(loc), "r")
   if f then
     local sz = f:seek("end")
     f:close()

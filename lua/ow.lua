@@ -50,6 +50,7 @@ end
 ---@return string
 ow.read_bytes = function(pin, size)
   assert(pin == nodemcu.ow.pin)
+  assert(type(size) == "number")
   return "A" -- TODO
 end
 
@@ -59,6 +60,7 @@ end
 ---@param power integer zero or one
 ow.write = function(pin, v, power)
   assert(pin == nodemcu.ow.pin)
+  assert(type(v) == "number")
   assert(power == 1 or power == 0)
   -- TODO
 end
@@ -69,6 +71,7 @@ end
 ---@param power integer zero or one
 ow.write_bytes = function(pin, buf, power)
   assert(pin == nodemcu.ow.pin)
+  assert(type(buf) == "string")
   assert(power == 1 or power == 0)
   -- TODO
 end
@@ -77,6 +80,7 @@ end
 ---@param buf string
 ---@return integer
 ow.crc8 = function(buf)
+  assert(type(buf) == "string")
   return 0 -- TODO
 end
 

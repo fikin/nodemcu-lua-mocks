@@ -22,7 +22,7 @@ local function getLFSfun()
     local str = os.getenv("NODEMCU_LFS_FILES") or ""
     local lst = strSplit(str, " ")
     local ret = {}
-    for i, loc in ipairs(lst) do
+    for _, loc in ipairs(lst) do
         local name = getModname(loc)
         ret[name] = loc
     end
@@ -69,6 +69,7 @@ end
 ---@param imageName string
 ---@return string? error
 LFS.reload = function(imageName)
+    assert(type(imageName) == "string")
     -- TODO how to determine if to return err
     -- TODO how to simulate node reboot
     return "FIXME : not implemented"

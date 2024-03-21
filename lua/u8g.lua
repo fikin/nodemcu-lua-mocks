@@ -23,26 +23,34 @@ end
 
 --- Disp.setFont implements stock nodemcu u8g.disp API
 Disp.setFont = function(self, font)
+  assert(self ~= nil)
+  assert(font ~= nil)
 end
 --- Disp.setFontRefHeightExtendedText implements stock nodemcu u8g.disp API
 Disp.setFontRefHeightExtendedText = function(self)
+  assert(self ~= nil)
 end
 --- Disp.setDefaultForegroundColor implements stock nodemcu u8g.disp API
 Disp.setDefaultForegroundColor = function(self)
+  assert(self ~= nil)
 end
 --- Disp.setFontPosTop implements stock nodemcu u8g.disp API
 Disp.setFontPosTop = function(self)
+  assert(self ~= nil)
 end
 --- Disp.drawFrame implements stock nodemcu u8g.disp API
 Disp.drawFrame = function(self, x1, y1, x2, y2)
+  assert(self ~= nil)
   print("frame: " .. x1 .. "/" .. y1 .. " - " .. x2 .. "/" .. y2)
 end
 --- Disp.drawStr implements stock nodemcu u8g.disp API
 Disp.drawStr = function(self, x, y, str)
+  assert(self ~= nil)
   print("[" .. x .. "/" .. y .. "] " .. str)
 end
 --- Disp.firstPage implements stock nodemcu u8g.disp API
 Disp.firstPage = function(self)
+  assert(self ~= nil)
   self.page = 1
 end
 --- Disp.nextPage implements stock nodemcu u8g.disp API
@@ -55,6 +63,7 @@ end
 ---@param slaAddress integer
 ---@return u8g_disp
 u8g.ssd1306_128x64_i2c = function(slaAddress)
+  assert(slaAddress ~= nil)
   return Disp.new()
 end
 

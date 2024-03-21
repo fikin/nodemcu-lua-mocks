@@ -5,7 +5,6 @@ Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu")
 local lu = require("luaunit")
-local tools = require("tools")
 
 function test()
   nodemcu.reset()

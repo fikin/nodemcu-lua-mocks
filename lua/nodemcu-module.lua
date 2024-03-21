@@ -52,9 +52,9 @@ end)
 NodeMCU.add_reset_fn("dht", function()
     ---called each time someone is using dht module.
     ---overwrite in test cases if needed.
-    ---@param pin integer
+    ---@param _ integer pin
     ---@return integer[]
-    NodeMCU.dht_read_cb = function(pin) return { 1, 0, 0, 0, 0 } end
+    NodeMCU.dht_read_cb = function(_) return { 1, 0, 0, 0, 0 } end
 end)
 
 NodeMCU.add_reset_fn("file-nodemcu", function()
@@ -154,6 +154,9 @@ NodeMCU.add_reset_fn("wifi-sta", function()
         ---@param format? integer
         ---@param cb fun(tbl:{[string]:string})
         GetAP = function(cfg, format, cb)
+            assert(cfg ~= nil)
+            assert(format ~= nil)
+            assert(type(cb) == "function")
         end,
     }
 end)
@@ -250,7 +253,8 @@ end
 
 ---sets pin to LOW or HIGH or to callback
 ---@param pin integer
----@param val integer|fun(pin:integer,val?:integer) one of : gpio.HIGH, gpio.LOW, callback function(pin)int or function(int,int)void
+---@param val integer|fun(pin:integer,val?:integer) one of : gpio.HIGH, gpio.LOW,
+--             callback function(pin)int or function(int,int)void
 NodeMCU.gpio_set = function(pin, val)
     local p = NodeMCU.getDefinedPin(pin)
     if type(val) == "function" then

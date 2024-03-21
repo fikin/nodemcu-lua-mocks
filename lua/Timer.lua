@@ -14,7 +14,7 @@ Timer.__index = Timer
 ---return current time
 ---@return integer
 Timer.getCurrentTimeMs = function()
-  local a, ms = math.modf(os.clock() * 1000)
+  local a, _ = math.modf(os.clock() * 1000)
   return a
 end
 

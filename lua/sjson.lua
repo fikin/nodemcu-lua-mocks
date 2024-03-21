@@ -105,6 +105,9 @@ end
 ---@param opts? any
 ---@return table
 sjson.decode = function(str, opts)
+  if opts then
+    assert(type(opts) == "table")
+  end
   local d = JsonDecorer.new()
   d:write(str)
   return d:result()
@@ -115,6 +118,9 @@ end
 ---@param opts? table
 ---@return string|nil
 sjson.encode = function(tbl, opts)
+  if opts then
+    assert(type(opts) == "table")
+  end
   local d = JsonEncoder.new(tbl)
   return d:read(4096)
 end

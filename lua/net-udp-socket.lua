@@ -15,7 +15,7 @@ local netTools = require("net-tools")
 
 ---do nothing function, used as dummy udpsocket event handler
 ---@type udpsocket_fn
-local function doNothingSelfFnc(self, data)
+local function doNothingSelfFnc(_, _)
 end
 
 ---table with event callbacks, used internally
@@ -50,7 +50,8 @@ end
 ---timestamp tracking last io activity, used internally in conjection with _idleTimeout
 ---@private
 ---@field _lastActivityTs integer timestamp tracking last io activity, used internally in conjection with _idleTimeout
----@field idleTimeout integer idle io time before connection will be auto-closed. by default 10ms. overwrite in the unit test if different value is needed.
+---@field idleTimeout integer idle io time before connection will be auto-closed. by default 10ms.
+--                            overwrite in the unit test if different value is needed.
 
 ---@type udpsocket
 local udpsocket = {
@@ -71,7 +72,7 @@ local udpsocket = {
         sent = doNothingSelfFnc,
         dns = doNothingSelfFnc
     },
-    insteadOfDnsLookup = function(self, domain) return "11.22.33.44"; end,
+    insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end,
     _tmr = Timer.createReoccuring(1, doNothingSelfFnc),
     _lastActivityTs = Timer.getCurrentTimeMs(),
     idleTimeout = 10,
@@ -141,7 +142,7 @@ udpsocket.new = function(idleTimeoutMs)
             dns = doNothingSelfFnc
         },
         -- default dns lookup logic
-        insteadOfDnsLookup = function(self, domain) return "11.22.33.44"; end,
+        insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end,
         _lastActivityTs = Timer.getCurrentTimeMs(),
         idleTimeout = idleTimeoutMs,
     }
@@ -295,6 +296,8 @@ end
 ---@param ip string
 ---@param data string
 udpsocket.send = function(self, port, ip, data)
+    assert(type(port) == "number")
+    assert(type(ip) == "string")
     if cb then
         self._on.sent = cb
     end

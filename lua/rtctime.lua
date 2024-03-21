@@ -27,6 +27,7 @@ end
 ---@param ts integer
 ---@return osdate
 rtctime.epoch2cal = function(ts)
+  assert(type(ts) == "number")
   local dt = os.date("*t", nodemcu.rtctime.sec)
   dt.mon = dt.month
   ---@cast dt osdate

@@ -67,11 +67,13 @@ function testConnectClient()
     local w = tools.wrapConnection(skt)
     ---simulates dns lookup
     skt.insteadOfDnsLookup = function(self, domain)
+        assert(self ~= nil)
         lu.assertEquals(domain, "dummy.local")
         return "22.22.22.22"
     end
 
     skt:dns("dummy.local", function(skt2, ip)
+        assert(skt2 ~= nil)
         lu.assertEquals(ip, "22.22.22.22")
         skt:connect(1111, ip)
     end)

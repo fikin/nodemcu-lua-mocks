@@ -148,6 +148,7 @@ end
 ---@param I2C_ADDR integer
 ---@return ads1115_instance
 ads1115.ads1115      = function(I2C_ID, I2C_ADDR)
+  assert(I2C_ID == 0)
   local o = {
     i2c_addr = I2C_ADDR,
     model = "1115",
@@ -160,6 +161,7 @@ end
 ---@param I2C_ADDR integer
 ---@return ads1115_instance
 ads1115.ads1015      = function(I2C_ID, I2C_ADDR)
+  assert(I2C_ID == 0)
   local o = {
     i2c_addr = I2C_ADDR,
     model = "1015",

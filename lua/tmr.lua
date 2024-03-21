@@ -3,9 +3,7 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
-local modname = ...
 local Timer = require("Timer")
-local nodemcu = require("nodemcu-module")
 
 ---@class tmr_instance
 ---@field timer TimerObj

@@ -13,7 +13,7 @@ local netTools = require("net-tools")
 
 ---do nothing function, used as dummy socket event handler
 ---@type socket_fn
-local function doNothingSelfFnc(self, data)
+local function doNothingSelfFnc(_, _)
 end
 
 ---table with event callbacks, used internally
@@ -63,7 +63,7 @@ local socket = {
     ---@param self socket
     ---@param domain string
     ---@return string|nil ip address which will be passed to "dns" callback. if nil, dns cb is not called.
-    insteadOfDnsLookup = function(self, domain) return "11.22.33.44"; end,
+    insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end,
     ---timer object, running events/data exchange b/n remote and local
     ---@private
     _tmr = Timer.createReoccuring(1, doNothingSelfFnc),
@@ -93,7 +93,7 @@ local function dispathStackWithTcpEvents(self)
             local fn = self._on[data.eventType]
             if fn == nil then
                 error(string.format("unsupported tcp event type \"%s\" with payload \"%s\"", data.eventType, data
-                .payload))
+                    .payload))
             end
             fn(self, data.payload)
         end
@@ -140,7 +140,7 @@ socket.new = function(idleTimeoutMs)
             dns = doNothingSelfFnc
         },
         -- default dns lookup logic
-        insteadOfDnsLookup = function(self, domain) return "11.22.33.44"; end,
+        insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end,
         _lastActivityTs = Timer.getCurrentTimeMs(),
         idleTimeout = idleTimeoutMs,
     }
@@ -255,6 +255,8 @@ end
 ---@param port integer
 ---@param ip string
 socket.connect = function(self, port, ip)
+    assert(self ~= nil)
+    assert(type(port) == "number")
     self._remoteAddr = netTools.newAddrObj(ip)
     startControlLoop(self)
 end

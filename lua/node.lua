@@ -110,14 +110,15 @@ end
 
 ---stock API
 ---@return number one or 80 or 160
-node.getcpufreq = function ()
+node.getcpufreq = function()
   return nodemcu.node.cpufreq
 end
 
 ---stock API
 ---@param us integer delay in microseconds
-node.delay = function (us)
+node.delay = function(us)
+  assert(type(us) == "number")
   -- TODO : how to advance time? Do we really need to delay anything in mocked tests?
 end
-  
+
 return node
