@@ -211,31 +211,53 @@ NodeMCU.add_reset_fn("node", function()
             reason = 0
         },
         chipid = 1234567890,
-        restartRequested = false,
         outputPipe = require("tools").new_pipe(),
         outputFn = false,
         outputToSerial = true,
         inputStr = "",
         cpufreq = 80,
     }
+    _G["NODEMCU_LFS_RELOAD_FAIL"] = nil
 end)
+
+---@class nodemcu_ow_rec
+---@field regularDevices string[] regular search() returns these.
+---@field alarmingDevices string[] search() with 0xEC returns these.
+---     typically these are set after some write (and initiate conversion).
+---@field searchIndx integer index to iterate devices, used by search
+---@field selectedRom string ROM of select(), as returned by search()
+---@field reset_resp integer 1 o 0, return value of reset() call
+---@field events string[][] every item is event like {"reset"},
+---    {"write", byte}, {"write_bytes", buf}, {"select", rom}, {"reser_search"} call
+---@field tobeRead string[] each call to read() returns one item
+
+---@alias nodemcu_ow_tbl nodemcu_ow_rec[] one-wire pin:test record table
 
 NodeMCU.add_reset_fn("ow", function()
-    NodeMCU.ow = {
-        ---@type integer
-        pin = nil,
-        ---value of select(rom)
-        ---@type ow_rom
-        selected_rom = nil,
-        ---ROM code returned by search() function.
-        ---test cases can assign value they expect here.
-        ---@type ow_rom
-        Rom = nil,
-    }
+    ---@type nodemcu_ow_tbl
+    NodeMCU.ow = {}
 end)
 
 --=======================
 --=======================
+
+---assign boot reason for the node
+---set it right after reset() and before startin actual test case
+---@param rawcode integer
+---@param reason integer
+NodeMCU.setBootreason = function(rawcode, reason)
+    NodeMCU.node.bootreason.rawcode = rawcode
+    NodeMCU.node.bootreason.reason = reason
+end
+
+---returns actual OS FS location of given file name in SPIFFS
+---@param fileNameInSPFFS string
+---@return string
+NodeMCU.fileLoc = function(fileNameInSPFFS)
+    assert(NodeMCU.t_file_workDir,
+        "nodemcu.t_file_workDir is nil, it seems you're calling file module before nodemcu.reset() !")
+    return NodeMCU.t_file_workDir .. "/" .. fileNameInSPFFS
+end
 
 ---asserts the given pin value is within valid range
 ---@param pin integer
@@ -308,6 +330,28 @@ end
 ---@param lst {[string]:string}
 NodeMCU.wifiAPsetClients = function(lst)
     NodeMCU.wifiAP.clients = lst
+end
+
+---Setup or get already setup OW record, associated with that pin
+---@param pin integer
+---@return nodemcu_ow_rec
+NodeMCU.get_ow = function(pin)
+    assert(pin >= 0)
+    assert(pin <= 8)
+    local rec = NodeMCU.ow[pin]
+    if rec == nil then
+        rec = {
+            regularDevices = {},
+            alarmingDevices = {},
+            searchIndx = 0,
+            reset_resp = 1,
+            selectedRom = "",
+            events = {},
+            tobeRead = {},
+        }
+        NodeMCU.ow[pin] = rec
+    end
+    return rec
 end
 
 --=======================
