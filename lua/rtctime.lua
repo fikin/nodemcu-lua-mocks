@@ -9,6 +9,8 @@ local nodemcu = require("nodemcu-module")
 rtctime = {}
 rtctime.__index = rtctime
 
+local atSetTime = require("Timer").getCurrentTimeMs()
+
 ---@class rtctime_ts
 ---@field sec integer seconds since the Unix epoch
 ---@field usec integer the microseconds part
@@ -20,6 +22,7 @@ rtctime.__index = rtctime
 ---@return integer
 rtctime.get = function()
   local ts = nodemcu.rtctime
+  ts.sec = ts.sec + require("Timer").getCurrentTimeMs() - atSetTime
   return ts.sec, ts.usec, ts.rate
 end
 
@@ -40,6 +43,7 @@ end
 ---@param rate? integer
 rtctime.set = function(sec, usec, rate)
   nodemcu.rtctime.sec = sec or nodemcu.rtctime.sec
+  atSetTime = require("Timer").getCurrentTimeMs()
   nodemcu.rtctime.usec = usec or nodemcu.rtctime.usec
   nodemcu.rtctime.rate = rate or nodemcu.rtctime.rate
 end
