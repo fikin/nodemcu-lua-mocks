@@ -46,7 +46,8 @@ mock_spiffs_dir:
 
 test/%:
 	@echo [INFO] : Running tests in ${*} ...
-	export LUA_PATH="$(LUA_PATH);lua/?.lua" \
+	export LUA_PATH="$(LUA_PATH);vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;;lua/?.lua;lua/?.lua" \
+		&& export LUA_CPATH="vendor/lua53/lib/lua/5.3/?.so;vendor/lua53/lib/lua/5.3/loadall.so;./?.so" \
 		&& export NODEMCU_MOCKS_SPIFFS_DIR="$(NODEMCU_MOCKS_SPIFFS_DIR)" \
 		&& export NODEMCU_LFS_FILES="$(NODEMCU_LFS_FILES)" \
 		&& export PATH="vendor/lua53/bin:${PATH}" \
