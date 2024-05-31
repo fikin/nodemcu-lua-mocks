@@ -17,9 +17,9 @@ end
 function testRestart()
     nodemcu.reset()
 
-    lu.assertIsFalse(nodemcu.node.restartRequested)
-    node.restart()
-    lu.assertIsTrue(nodemcu.node.restartRequested)
+    local ok, err = pcall(node.restart)
+    lu.assertIsFalse(ok)
+    lu.assertStrContains(err, "node.restart")
 end
 
 function testInput()
@@ -43,6 +43,29 @@ function testInput()
     node.input("return 22, 'cc'")
 
     lu.assertEquals(stdout:read(2000), "11 bb\n32096\n")
+end
+
+function testCompile()
+    nodemcu.reset()
+
+    local file = require("file")
+
+    local f1 = "f1.lua"
+    local f2 = "f1.lc"
+
+    file.remove(f1)
+    file.remove(f2)
+
+    local ok = file.putcontents(f1, "return { a=1, b={ c=2, d=\"dd\" } }")
+    lu.assertIsTrue(ok)
+
+    node.compile(f1)
+
+    local bytecode = file.getcontents(f2)
+    assert(bytecode)
+    local f = load(bytecode)
+    assert(f)
+    lu.assertEquals(f(), { a = 1, b = { c = 2, d = "dd" } })
 end
 
 os.exit(lu.run())
