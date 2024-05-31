@@ -46,7 +46,7 @@ end
 
 function testListFiles()
     nodemcu.reset()
-    lu.assertEquals(file.list(), { "aa.txt" })
+    lu.assertEquals(file.list(), { ["aa.txt"] = 4 })
 end
 
 os.exit(lu.run())

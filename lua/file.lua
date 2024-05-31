@@ -23,20 +23,16 @@ nodemcu.add_reset_fn(modname, function()
   file.obj = nil
 end)
 
-local function fileLoc(loc)
-  return nodemcu.t_file_workDir .. "/" .. loc
-end
-
 ---file.getcontents is stock nodemcu API
 ---@param loc string
 ---@return string|nil
 file.getcontents = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, _ = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(nodemcu.fileLoc(loc), "r")
   if not f then
     return nil
   end
-  local str = f:read(4096)
+  local str = f:read(1024*1024)
   f:close()
   return str
 end
@@ -48,14 +44,21 @@ file.list = function(pattern)
   pattern = pattern or ".*"
   assert(type(pattern) == "string", "pattern must be string or nil")
   local arr = {}
-  local iter = io.popen(string.format("ls \"%s\"", fileLoc("")))
+  local iter, err = io.popen(string.format("ls \"%s\"", nodemcu.fileLoc("")))
   if iter then
     for f in iter:lines() do
-      local i, _ = string.find(f, pattern)
-      if i then
-        table.insert(arr, f)
+      local st = file.stat(f)
+      if st then
+        local i, _ = string.find(st.name, pattern)
+        if i then
+          arr[st.name] = st.size
+        end
+      else
+        assert("should not have happened : file.stats : " .. f)
       end
     end
+  else
+    assert("should not have happened : " .. tostring(err))
   end
   return arr
 end
@@ -67,7 +70,7 @@ end
 file.open = function(loc, mode)
   assert(type(loc) == "string", "name must be string")
   assert((file.obj and file.obj:isClosed()) or not file.obj, "file.obj is not closed")
-  local f, _ = openFileFn(fileLoc(loc), mode)
+  local f, _ = openFileFn(nodemcu.fileLoc(loc), mode)
   if f then
     file.obj = f
   end
@@ -79,7 +82,7 @@ end
 ---@return boolean
 file.exists = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, _ = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(nodemcu.fileLoc(loc), "r")
   if f then
     f:close()
     return true
@@ -91,7 +94,7 @@ end
 ---@param loc string
 file.remove = function(loc)
   assert(type(loc) == "string", "location must be string")
-  os.remove(fileLoc(loc))
+  os.remove(nodemcu.fileLoc(loc))
 end
 
 ---file.putcontents is stick nodemcu API
@@ -101,7 +104,7 @@ end
 file.putcontents = function(loc, data)
   assert(type(loc) == "string", "location must be string")
   assert(data ~= nil, "data is nil")
-  local f, _ = openFileFn(fileLoc(loc), "w")
+  local f, _ = openFileFn(nodemcu.fileLoc(loc), "w")
   if f then
     f:write(data)
     f:close()
@@ -117,7 +120,7 @@ end
 file.rename = function(oldname, newname)
   assert(type(oldname) == "string", "oldname must be string")
   assert(type(newname) == "string", "newname must be string")
-  return os.rename(fileLoc(oldname), fileLoc(newname))
+  return os.rename(nodemcu.fileLoc(oldname), nodemcu.fileLoc(newname))
 end
 
 ---@class file_stat
@@ -129,7 +132,7 @@ end
 ---@return file_stat|nil
 file.stat = function(loc)
   assert(type(loc) == "string", "location must be string")
-  local f, _ = openFileFn(fileLoc(loc), "r")
+  local f, _ = openFileFn(nodemcu.fileLoc(loc), "r")
   if f then
     local sz = f:seek("end")
     f:close()
