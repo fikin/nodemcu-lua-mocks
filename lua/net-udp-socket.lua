@@ -31,52 +31,53 @@ end
 ---@alias testDnsLookupFn fun(self:udpsocket,domain:string):string|nil
 
 ---represent net.tcp.udpsocket object
----@class udpsocket
----@field _localAddr addrObj private field
----@field _remoteAddr addrObj private field
----@field _sent fifoArr private field
----@field _received fifoArr private field
----@field _udpEvents fifoArr private field
----@field _holdOn boolean private field
----@field _ttl integer private field
----@field _isClosed boolean private field, true if socker is closed
----@field net_tcp_framesize integer tcp frame size, overwrite in test cases if needed
----@field _on udpSocketCallbacksTbl table with event callbacks, used internally, do not touch directly = {
----substitutes calling actual dns lookup in test cases.
----by default returns 11.22.33.44 for all requests.
----overwrite it in the unit test if different behaviour is needed.
----@field insteadOfDnsLookup testDnsLookupFn
----@field _tmr TimerObj timer object, running events/data exchange b/n remote and local
----timestamp tracking last io activity, used internally in conjection with _idleTimeout
----@private
----@field _lastActivityTs integer timestamp tracking last io activity, used internally in conjection with _idleTimeout
----@field idleTimeout integer idle io time before connection will be auto-closed. by default 10ms.
+--@class udpsocket
+--@field _localAddr addrObj private field
+--@field _remoteAddr addrObj private field
+--@field _sent fifoArr private field
+--@field _received fifoArr private field
+--@field _udpEvents fifoArr private field
+--@field _holdOn boolean private field
+--@field _ttl integer private field
+--@field _isClosed boolean private field, true if socker is closed
+--@field net_tcp_framesize integer tcp frame size, overwrite in test cases if needed
+--@field _on udpSocketCallbacksTbl table with event callbacks, used internally, do not touch directly = {
+--substitutes calling actual dns lookup in test cases.
+--by default returns 11.22.33.44 for all requests.
+--overwrite it in the unit test if different behaviour is needed.
+--@field insteadOfDnsLookup testDnsLookupFn
+--@field _tmr TimerObj timer object, running events/data exchange b/n remote and local
+--timestamp tracking last io activity, used internally in conjection with _idleTimeout
+--@private
+--@field _lastActivityTs integer timestamp tracking last io activity, used internally in conjection with _idleTimeout
+--@field idleTimeout integer idle io time before connection will be auto-closed. by default 10ms.
 --                            overwrite in the unit test if different value is needed.
 
----@type udpsocket
-local udpsocket = {
-    _localAddr = netTools.newAddrObj(),
-    _remoteAddr = netTools.newAddrObj(),
-    _sent = fifoArr.new(),
-    _received = fifoArr.new(),
-    _udpEvents = fifoArr.new(),
-    _holdOn = false,
-    _ttl = 10,
-    _isClosed = false,
-    net_tcp_framesize = 1024,
-    _on = {
-        connection = doNothingSelfFnc,
-        reconnection = doNothingSelfFnc,
-        disconnection = doNothingSelfFnc,
-        receive = doNothingSelfFnc,
-        sent = doNothingSelfFnc,
-        dns = doNothingSelfFnc
-    },
-    insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end,
-    _tmr = Timer.createReoccuring(1, doNothingSelfFnc),
-    _lastActivityTs = Timer.getCurrentTimeMs(),
-    idleTimeout = 10,
+--@type udpsocket
+---@class udpsocket
+local udpsocket = {}
+udpsocket._localAddr = netTools.newAddrObj()
+udpsocket._remoteAddr = netTools.newAddrObj()
+udpsocket._sent = fifoArr.new()
+udpsocket._received = fifoArr.new()
+udpsocket._tcpEvents = fifoArr.new()
+udpsocket._udpEvents = fifoArr.new()
+udpsocket._holdOn = false
+udpsocket._ttl = 10
+udpsocket._isClosed = false
+udpsocket.net_tcp_framesize = 1024
+udpsocket._on = {
+    connection = doNothingSelfFnc,
+    reconnection = doNothingSelfFnc,
+    disconnection = doNothingSelfFnc,
+    receive = doNothingSelfFnc,
+    sent = doNothingSelfFnc,
+    dns = doNothingSelfFnc
 }
+udpsocket.insteadOfDnsLookup = function(_, _) return "11.22.33.44"; end
+udpsocket._tmr = Timer.createReoccuring(1, doNothingSelfFnc)
+udpsocket._lastActivityTs = Timer.getCurrentTimeMs()
+udpsocket.idleTimeout = 10
 udpsocket.__index = udpsocket
 
 ---@param self udpsocket
