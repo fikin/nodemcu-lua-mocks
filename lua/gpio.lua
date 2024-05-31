@@ -24,7 +24,14 @@ gpio.LOW = 0
 
 local defaultTrigCb = function(_, _) end
 ---@enum gpio_trig_type
-local trigTypeEnum = { "none", "up", "down", "both", "high", "low" }
+local trigTypeEnum = {
+  ["none"] = "none",
+  ["up"] = "up",
+  ["down"] = "down",
+  ["both"] = "both",
+  ["high"] = "high",
+  ["low"] = "low",
+}
 
 
 ---gpio.mode is stock nodemcu API
@@ -40,7 +47,7 @@ end
 ---gpio.trig is stock nodemcu API
 ---@param pin integer
 ---@param what gpio_trig_type
----@param cb gpio_trig_fn
+---@param cb gpio_trig_fn|nil
 gpio.trig = function(pin, what, cb)
   local p = nodemcu.getDefinedPin(pin)
   assert(type(what) == "string", "what must be string")
@@ -56,7 +63,7 @@ end
 ---@param val integer
 gpio.write = function(pin, val)
   local p = nodemcu.getDefinedPin(pin)
-  assert(p.mode == gpio.OUTPUT, string.format("expects pin %d mode to be OUTPUT but found %d", pin, p.mode))
+  -- assert(p.mode == gpio.OUTPUT, string.format("expects pin %d mode to be OUTPUT but found %d", pin, p.mode))
   assert(val == gpio.HIGH or val == gpio.LOW,
     string.format("expects value of gpio.HIGH or LOW for pin %d but found %d", pin, val))
   p.cbGetValue = function() return val; end
@@ -68,7 +75,7 @@ end
 ---@return number
 gpio.read = function(pin)
   local p = nodemcu.getDefinedPin(pin)
-  assert(p.mode == gpio.INPUT, string.format("expects pin %d mode to be INPUT but found %d", pin, p.mode))
+  -- assert(p.mode == gpio.INPUT, string.format("expects pin %d mode to be INPUT but found %d", pin, p.mode))
   return p.cbGetValue()
 end
 
