@@ -100,7 +100,12 @@ end
 ---stock API
 ---raises error "node.restart"
 node.restart = function()
-  error("node.restart")
+  if _G["NODEMCU_RESTART_IGNORE"] then
+    print("node.restart() ignored")
+    nodemcu.node.restartIgnored = true
+  else
+    error("node.restart")
+  end
 end
 
 ---stock API

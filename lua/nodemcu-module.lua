@@ -216,7 +216,9 @@ NodeMCU.add_reset_fn("node", function()
         outputToSerial = true,
         inputStr = "",
         cpufreq = 80,
+        restartIgnored = false,
     }
+    _G["NODEMCU_RESTART_IGNORE"] = nil
     _G["NODEMCU_LFS_RELOAD_FAIL"] = nil
 end)
 
