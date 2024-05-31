@@ -14,5 +14,10 @@ return function(table, val)
             return true
         end
     end
+    for k, v in pairs(table) do
+        if k == val and v then
+            return true
+        end
+    end
     return false
 end
