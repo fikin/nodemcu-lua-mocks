@@ -35,7 +35,8 @@ vendor/hererocks:
 	export PATH="vendor/lua53/bin:${PATH}" \
 		&& luarocks install luacheck \
 		&& luarocks install luacov \
-		&& luarocks install luacov-console
+		&& luarocks install luacov-console \
+		&& luarocks install luacov-html
 
 mock_spiffs_dir:
 	@mkdir -p $(NODEMCU_MOCKS_SPIFFS_DIR)
@@ -84,3 +85,9 @@ coverage:               ## prints coverage report, collected when running tests
 
 ##############################################
 ##############################################
+
+coverage_html:
+	export LUA_PATH="$(LUA_PATH);vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;;lua/?.lua;lua/?.lua" \
+		&& export LUA_CPATH="vendor/lua53/lib/lua/5.3/?.so;vendor/lua53/lib/lua/5.3/loadall.so;./?.so" \
+		&& export PATH="vendor/lua53/bin:${PATH}" \
+		&& luacov -c=.luacov_html lua

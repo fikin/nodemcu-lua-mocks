@@ -58,3 +58,4 @@ vendor
 luacov.stats.out
 luacov.report.out
 luacov.report.out.index
+luacov-html
