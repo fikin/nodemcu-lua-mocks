@@ -76,7 +76,10 @@ lint: vendor/hererocks ${LUA_FILES:%=lint/%} ${LUA_TEST_CASES:%=lint/%} ## lint 
 ##############################################
 
 coverage:               ## prints coverage report, collected when running tests
-	export PATH="vendor/lua53/bin:${PATH}" \
+	export LUA_PATH="$(LUA_PATH);vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;;lua/?.lua;lua/?.lua" \
+		&& export LUA_CPATH="vendor/lua53/lib/lua/5.3/?.so;vendor/lua53/lib/lua/5.3/loadall.so;./?.so" \
+		&& export PATH="vendor/lua53/bin:${PATH}" \
+		&& luacov-console lua \
 		&& luacov-console lua -s
 
 ##############################################

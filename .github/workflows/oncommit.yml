@@ -19,5 +19,3 @@ jobs:
       run: make test
     - name: Run lua linters
       run: make lint
-    - name: Run lua coverage
-      run: make coverage
