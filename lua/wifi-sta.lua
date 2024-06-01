@@ -5,13 +5,8 @@ Authors : Nikolay Fiykov, v1
 --]]
 local inspect = require("inspect")
 local nodemcu = require("nodemcu-module")
-local Timer = require("Timer")
 local Eventmon = require("wifi-eventmon")
 
-
-local function queueEvent(fnc)
-  Timer.createSingle(nodemcu.wifiSTA.ConnectTimeout, fnc):start()
-end
 
 -- ######################
 -- ######################
@@ -23,9 +18,9 @@ local Sta = {}
 Sta.__index = Sta
 
 ---stock API
----@param tbl boolean
+---@param _ boolean tbl
 ---@return wifi_sta_config
-Sta.getdefaultconfig = function(tbl)
+Sta.getdefaultconfig = function(_)
   return {
     ssid = "undefined",
     pwd = "undefined",

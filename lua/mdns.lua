@@ -3,7 +3,6 @@ License : GLPv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
-local nodemcu = require("nodemcu-module")
 
 ---@class mdns
 mdns = {}
@@ -13,6 +12,11 @@ mdns.__index = mdns
 ---@param hostname string
 ---@param attributes? table
 mdns.register = function(hostname, attributes)
+  assert(hostname ~= nil)
+  assert(type(hostname) == "string")
+  if attributes then
+    assert(type(attributes) == "table")
+  end
   -- TODO add implementation
 end
 

@@ -22,7 +22,7 @@ local function getLFSfun()
     local str = os.getenv("NODEMCU_LFS_FILES") or ""
     local lst = strSplit(str, " ")
     local ret = {}
-    for i, loc in ipairs(lst) do
+    for _, loc in ipairs(lst) do
         local name = getModname(loc)
         ret[name] = loc
     end
@@ -66,12 +66,22 @@ LFS.get = function(modName)
 end
 
 ---stock API
+---if the imageName exists, it raises and error with mesage "node.LFS.reload".
+---if the imageName does not exists, it returns doing nothing.
+---if global variable NODEMCU_LFS_RELOAD_FAIL is defined, it returns its value as error
 ---@param imageName string
----@return string? error
+---@return string error
 LFS.reload = function(imageName)
-    -- TODO how to determine if to return err
-    -- TODO how to simulate node reboot
-    return "FIXME : not implemented"
+    assert(type(imageName) == "string")
+    local ok = require("file").exists(imageName)
+    if ok then
+        if _G["NODEMCU_LFS_RELOAD_FAIL"] then
+            return string.format("%s", _G["NODEMCU_LFS_RELOAD_FAIL"])
+        end
+        error("node.LFS.reload")
+    else
+        return string.format("image file missing : %s", imageName)
+    end
 end
 
 return LFS

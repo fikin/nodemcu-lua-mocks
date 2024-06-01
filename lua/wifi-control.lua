@@ -85,7 +85,7 @@ local function handleStaAutoConnectLogic()
                 local ip = cfg.staticIp or ap.dhcp
                 if ip then
                     fireWifiEvent(wifi.eventmon.STA_GOT_IP, ip)
-                else
+                -- else
                     --- wait for test case to send got-ip event or for timeout to fail with dhcp-timeout
                 end
             end
@@ -111,8 +111,8 @@ local function handleStaAutoConnectLogic()
 end
 
 ---Control loop dispatching all queued Wifi events.
----@param t tmr_instance
-local function controlLoop(t)
+---@param _ tmr_instance
+local function controlLoop(_)
     local fifo = nodemcu.wifi.eventsQueue
     while fifo:hasMore() do
         ---@type wifi_internal_event

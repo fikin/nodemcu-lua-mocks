@@ -17,3 +17,5 @@ jobs:
       run: sudo ln -sf /usr/bin/lua5.3 /usr/bin/lua
     - name: Run lua tests
       run: make test
+    - name: Run lua linters
+      run: make lint

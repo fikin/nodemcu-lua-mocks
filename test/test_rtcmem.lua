@@ -8,8 +8,9 @@ local lu = require("luaunit")
 
 local rtcmem = require("rtcmem")
 
-function testBit()
+function testOk()
   nodemcu.reset()
+  lu.assertNotIsNaN(rtcmem.read32(10))
   rtcmem.write32(1, 0xABCDEF12)
   rtcmem.write32(2, 0x11223344, 0x55667788)
   lu.assertEquals(rtcmem.read32(2), 0x11223344)

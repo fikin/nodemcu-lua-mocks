@@ -19,6 +19,10 @@ i2c.FASTPLUS = 3
 ---@param sclPin integer
 ---@param speed number
 i2c.setup = function(indx, sdaPin, sclPin, speed)
+    assert(type(indx) == "number")
+    assert(type(sdaPin) == "number")
+    assert(type(sclPin) == "number")
+    assert(type(speed) == "number")
     -- TODO add implementation
 end
 

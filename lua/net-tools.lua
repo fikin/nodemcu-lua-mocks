@@ -27,11 +27,4 @@ end
 ---socket callback function
 ---@alias socket_fn fun(skt:socket, data?: string)
 
----do nothing function, used as dummy socket event handler
----@type socket_fn
-local function doNothingSelfFnc(self, data)
-end
-
-
-
 return M

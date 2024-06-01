@@ -18,13 +18,13 @@ local nodemcu = require("nodemcu-module")
 rotary = {}
 rotary.__index = rotary
 
-rotary.PRESS = 1 -- The eventtype for the switch press.
+rotary.PRESS = 1     -- The eventtype for the switch press.
 rotary.LONGPRESS = 2 -- The eventtype for a long press.
-rotary.RELEASE = 4 -- The eventtype for the switch release.
-rotary.TURN = 8 -- The eventtype for the switch rotation.
-rotary.CLICK = 16 -- The eventtype for a single click (after release)
+rotary.RELEASE = 4   -- The eventtype for the switch release.
+rotary.TURN = 8      -- The eventtype for the switch rotation.
+rotary.CLICK = 16    -- The eventtype for a single click (after release)
 rotary.DBLCLICK = 32 -- The eventtype for a double click (after second release)
-rotary.ALL = 63 -- All event types.
+rotary.ALL = 63      -- All event types.
 
 ---Emulates rotary switch turn with delta steps.
 ---It recalculates the new position and fires set callbacks.
@@ -36,7 +36,7 @@ nodemcu.rotary_turn = function(channel, deltaSteps)
   ch = nodemcu.rotary[channel + 1]
   assert(ch, "channel not setup yet")
   ch.pos = ch.pos + deltaSteps
-  for k, v in pairs({ rotary.TURN, rotary.ALL }) do
+  for _, v in pairs({ rotary.TURN, rotary.ALL }) do
     cb = ch.callbacks[v]
     if cb then
       cb(v, ch.pos, os.time())
@@ -53,7 +53,7 @@ nodemcu.rotary_press = function(channel, eventType)
   assert(type(eventType) == "number", "eventType must be number")
   ch = nodemcu.rotary[channel + 1]
   assert(ch, "channel not setup yet")
-  for k, v in pairs({ eventType, rotary.ALL }) do
+  for _, v in pairs({ eventType, rotary.ALL }) do
     cb = ch.callbacks[v]
     if cb then
       cb(v, ch.pos, os.time())

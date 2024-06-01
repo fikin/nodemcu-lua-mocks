@@ -52,3 +52,10 @@ luac.out
 *.x86_64
 *.hex
 
+# go like 
+vendor
+
+luacov.stats.out
+luacov.report.out
+luacov.report.out.index
+luacov-html

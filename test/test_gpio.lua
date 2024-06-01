@@ -18,7 +18,7 @@ function testTrigger()
     gpio.trig(
       pin,
       what,
-      function(level, time)
+      function(level, _)
         str = str .. tostring(level)
       end
     )
@@ -31,7 +31,6 @@ function testTrigger()
   local up = collectLevelsFor(2, "up")
   local down = collectLevelsFor(3, "down")
   local low = collectLevelsFor(4, "low")
-  local high = collectLevelsFor(5, "high")
   local signal = { gpio.LOW, gpio.HIGH, gpio.LOW, gpio.HIGH }
   for i = 1, #signal do
     for j = 1, 5 do

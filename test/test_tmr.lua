@@ -30,9 +30,8 @@ function testAlarmMethod()
     tmr.create():alarm(
       1,
       tmr.ALARM_SINGLE,
-      function(timerObj)
+      function(_)
         fncCalled = 1
-        timerObj:unregister()
       end
     )
   )
@@ -47,9 +46,8 @@ function testReoccurringAlarm()
   t:register(
     1,
     tmr.ALARM_AUTO,
-    function(timerObj)
+    function(_)
       fncCalled = fncCalled + 1
-      timerObj:start()
     end
   )
   nodemcu.advanceTime(5)

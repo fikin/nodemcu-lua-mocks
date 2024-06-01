@@ -5,7 +5,6 @@ Authors : Nikolay Fiykov, v1
 --]]
 local nodemcu = require("nodemcu")
 local lu = require("luaunit")
-local tools = require("tools")
 
 function testGetPutOk()
     nodemcu.reset()
@@ -43,6 +42,11 @@ function testRenameRemoveExistsStatOk()
     lu.assertIsTrue(file.rename(loc, newLoc))
     lu.assertEquals(file.getcontents(newLoc), data)
     file.remove(newLoc)
+end
+
+function testListFiles()
+    nodemcu.reset()
+    lu.assertEquals(file.list(), { ["aa.txt"] = 4 })
 end
 
 os.exit(lu.run())

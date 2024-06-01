@@ -32,12 +32,12 @@ function testReoccuring()
   Timer.reset()
   local callsCnt = 0
   local t =
-  Timer.createReoccuring(
-    1,
-    function(timerObj)
-      callsCnt = callsCnt + 1
-    end
-  )
+      Timer.createReoccuring(
+        1,
+        function(_)
+          callsCnt = callsCnt + 1
+        end
+      )
   t:start()
   Timer.joinAll(3)
   lu.assertEquals(callsCnt, 3)
@@ -47,13 +47,13 @@ function testStopFromWithinCallback()
   Timer.reset()
   local callsCnt = 0
   local t =
-  Timer.createReoccuring(
-    1,
-    function(timerObj)
-      timerObj:stop()
-      callsCnt = callsCnt + 1
-    end
-  )
+      Timer.createReoccuring(
+        1,
+        function(timerObj)
+          timerObj:stop()
+          callsCnt = callsCnt + 1
+        end
+      )
   t:start()
   Timer.joinAll(5)
   lu.assertEquals(callsCnt, 1)
