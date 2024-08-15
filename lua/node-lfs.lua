@@ -12,7 +12,7 @@ local lf = loadfile
 ---@param loc string
 ---@return string
 local function getModname(loc)
-    local s, _ = string.gsub(string.match(loc, "[^/]*.lua$"), ".lua", "")
+    local s, _ = string.gsub(string.match(loc, "[^/]*.lua$"), ".lua$", "")
     return s
 end
 

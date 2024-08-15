@@ -150,7 +150,7 @@ node.compile = function(fName)
   local bytecode = string.dump(f3)
 
   -- write to .lc file
-  local fName2 = string.gsub(fName, ".lua", ".lc")
+  local fName2 = string.gsub(fName, ".lua$", ".lc")
   local fd2, err2 = io.open(nodemcu.fileLoc(fName2), "w")
   assert(err2 == nil, string.format("failed writing file : %s : %s", fName2, err2))
   assert(fd2, string.format("failed opening file for writing : %s", fName2))
