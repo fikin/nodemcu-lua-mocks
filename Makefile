@@ -8,6 +8,8 @@ LUA_TEST_CASES 							:= $(wildcard test/*est*.lua)
 NODEMCU_MOCKS_SPIFFS_DIR   	?= vendor/tests-spiffs
 NODEMCU_LFS_FILES						?=
 
+LUA_EXTRA_PATH							?= vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;
+
 .PHONY: help 
 .PHONY: clean
 .PHONY: mock_spiffs_dir
@@ -47,7 +49,7 @@ mock_spiffs_dir:
 
 test/%:
 	@echo [INFO] : Running tests in ${*} ...
-	export LUA_PATH="$(LUA_PATH);vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;;lua/?.lua;lua/?.lua" \
+	export LUA_PATH="$(LUA_PATH);lua/?.lua;$(LUA_EXTRA_PATH)" \
 		&& export LUA_CPATH="vendor/lua53/lib/lua/5.3/?.so;vendor/lua53/lib/lua/5.3/loadall.so;./?.so" \
 		&& export NODEMCU_MOCKS_SPIFFS_DIR="$(NODEMCU_MOCKS_SPIFFS_DIR)" \
 		&& export NODEMCU_LFS_FILES="$(NODEMCU_LFS_FILES)" \
@@ -83,11 +85,12 @@ coverage:               ## prints coverage report, collected when running tests
 		&& luacov-console lua \
 		&& luacov-console lua -s
 
-##############################################
-##############################################
-
-coverage_html:
+coverage_html:					## generate luacov-html/ coverage report
 	export LUA_PATH="$(LUA_PATH);vendor/lua53/share/lua/5.3/?.lua;vendor/lua53/share/lua/5.3/?/init.lua;;lua/?.lua;lua/?.lua" \
 		&& export LUA_CPATH="vendor/lua53/lib/lua/5.3/?.so;vendor/lua53/lib/lua/5.3/loadall.so;./?.so" \
 		&& export PATH="vendor/lua53/bin:${PATH}" \
 		&& luacov -c=.luacov_html lua
+
+##############################################
+##############################################
+

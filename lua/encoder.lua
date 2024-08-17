@@ -1,5 +1,5 @@
 --[[
-License : GLPv3, see LICENCE in root of repository
+License : GPLv3, see LICENCE in root of repository
 
 Authors : Nikolay Fiykov, v1
 --]]
