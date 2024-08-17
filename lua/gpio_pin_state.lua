@@ -42,7 +42,7 @@ end
 ---@return gpio_pin_state[]
 PinState.createPins = function()
     local arr = {}
-    for i = 1, 12 do
+    for i = 0, 8 do
         arr[i] = PinState:new(i)
     end
     return arr
@@ -54,7 +54,7 @@ end
 ---@return gpio_pin_state
 PinState.assertPinRange = function(pin, pins)
     assert(type(pin) == "number", "pin must be number")
-    assert(pin > 0 and pin < 13, "pin must be 0<pin<13")
+    assert(pin >= 0 and pin <= 8, "pin must be 0<=pin<=8")
     assert(pins[pin] ~= nil, "pin does not exists in test data array " .. pin)
     return pins[pin]
 end
